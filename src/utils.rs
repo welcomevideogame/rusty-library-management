@@ -4,7 +4,7 @@ pub mod loading {
     use std::io::BufReader;
 
     pub fn load_db_settings() -> Vec<String> {
-        let settings: [&str; 2] = ["endpoint", "api_key"];
+        let settings: [&str; 2] = ["endpoint", "password"];
         let mut res_settings: Vec<String> = Vec::new();
 
         let mut contents = String::new();

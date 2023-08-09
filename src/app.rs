@@ -1,4 +1,5 @@
 use crate::app::data_manager::manager::DbTool;
+use tokio::runtime::Runtime;
 
 mod utils {
     include!("utils.rs");
@@ -13,16 +14,15 @@ pub struct App {
 
 impl App {
     pub fn new() -> App {
+        println!("Starting the library management system...");
         let settings = utils::loading::load_db_settings();
-        App {
-            db_manager: DbTool::new(&settings),
-        }
+        let rt = Runtime::new().unwrap();
+        let db_manager = rt
+            .block_on(DbTool::new(&settings))
+            .expect("Failed to connect to the database");
+        println!("Connected to the database");
+        App { db_manager }
     }
 
-    pub fn run(&mut self) {
-        print!(
-            "Starting the library management system.\nConnecting to {}",
-            self.db_manager.endpoint
-        );
-    }
+    pub fn run(&mut self) {}
 }
