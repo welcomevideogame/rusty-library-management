@@ -1,4 +1,5 @@
 pub mod structs {
+
     use crate::types::enums::MediaType;
 
     pub struct Employee {

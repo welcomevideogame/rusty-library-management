@@ -14,5 +14,5 @@ fn test_valid_employee() {
         5,
         String::from("password"),
     );
-    assert!(!emp.is_err());
+    assert!(emp.is_ok());
 }
