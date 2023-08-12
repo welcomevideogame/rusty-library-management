@@ -26,6 +26,6 @@ impl App {
 
     pub fn run(&mut self) {
         let rt = Runtime::new().unwrap();
-        rt.block_on(self.db_manager.get_employee_table());
+        let employees = rt.block_on(self.db_manager.get_employee_table());
     }
 }
