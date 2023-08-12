@@ -1,5 +1,8 @@
-use crate::app::data_manager::manager::DbTool;
-use crate::types::structs::Employee;
+use crate::types;
+use crate::types::structs::{DisplayInfo, Employee};
+use serde::de::DeserializeOwned;
+use serde::Deserialize;
+use std::fmt::Display;
 
 pub mod manager {
     use super::super::utils::network;
@@ -40,39 +43,40 @@ pub mod manager {
 
             let client = Postgrest::new(&endpoint).insert_header("apikey", &api_key);
 
-            client.from("Employee");
-
             println!("Connecting to {endpoint}");
             Ok(DbTool { salt, client })
         }
 
-        pub async fn get_employee_table(&self) -> Vec<Employee> {
+        pub async fn get_table<T: DisplayInfo + DeserializeOwned>(&self) -> Vec<T> {
             let resp = self
                 .client
-                .from("Employee")
+                .from(T::get_table_name())
                 .select("*")
                 .execute()
                 .await
                 .expect("Failed to execute query");
             match resp.text().await {
-                Ok(s) => match serde_json::from_str::<Vec<Employee>>(&s) {
-                    Ok(emp) => emp,
+                Ok(s) => match serde_json::from_str(&s) {
+                    Ok(vec_t) => vec_t,
                     Err(err) => panic!("Error Parsing Employee Data -> {}", err),
                 },
                 Err(_) => panic!("Invalid table settings. Unable to get data."),
             }
         }
 
-        pub async fn add_employee(&self, employee: Employee) -> Result<(), DbToolError> {
+        pub async fn database_insert<T: DisplayInfo + serde::Serialize>(
+            &self,
+            obj: T,
+        ) -> Result<(), DbToolError> {
             let _ = self
-                .check_employee_exists(&employee)
+                .check_entry_exists::<T>(&obj)
                 .await
                 .map_err(|_| return DbToolError::EntryExists)?;
 
-            let body = serde_json::to_value(employee).unwrap();
+            let body = serde_json::to_value(obj).unwrap();
             let resp = self
                 .client
-                .from("Employee")
+                .from(T::get_table_name())
                 .insert(body.to_string())
                 .execute()
                 .await;
@@ -83,16 +87,16 @@ pub mod manager {
             }
         }
 
-        async fn check_employee_exists(&self, employee: &Employee) -> Result<(), DbToolError> {
+        async fn check_entry_exists<T: DisplayInfo>(&self, obj: &T) -> Result<(), DbToolError> {
             let resp = self
                 .client
-                .from("Employee")
-                .eq("id", employee.id.to_string())
+                .from(T::get_table_name())
+                .eq("id", obj.get_id().to_string())
                 .execute()
                 .await;
             match resp.expect("Unknown error").text().await {
                 Ok(body) => {
-                    if !body.contains("name") {
+                    if !body.contains("id") {
                         // Just any arbitrary column name
                         Ok(())
                     } else {
@@ -111,7 +115,7 @@ mod tests {
 
     fn create_test_employee() -> Employee {
         Employee::new(
-            100,
+            1008,
             String::from("John Doe"),
             String::from("IT"),
             1,
@@ -133,9 +137,12 @@ mod tests {
     #[tokio::test]
     async fn add_employee() {
         let settings = super::super::utils::loading::load_db_settings();
-        let tool = DbTool::new(&settings).await.unwrap();
+        let tool = manager::DbTool::new(&settings).await.unwrap();
 
         let test_employee = create_test_employee();
-        assert!(tool.add_employee(test_employee).await.is_ok());
+        assert!(tool
+            .database_insert::<Employee>(test_employee)
+            .await
+            .is_ok());
     }
 }

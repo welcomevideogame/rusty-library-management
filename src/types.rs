@@ -2,6 +2,11 @@ pub mod structs {
 
     use crate::types::enums::MediaType;
 
+    pub trait DisplayInfo {
+        fn get_id(&self) -> u16;
+        fn get_table_name() -> &'static str;
+    }
+
     #[derive(serde::Deserialize, serde::Serialize, Debug)]
     pub struct Employee {
         pub id: u16,
@@ -13,6 +18,15 @@ pub mod structs {
         alloc_budget: u16,
         perm_level: u16,
         password: String,
+    }
+
+    impl DisplayInfo for Employee {
+        fn get_id(&self) -> u16 {
+            self.id
+        }
+        fn get_table_name() -> &'static str {
+            "Employee"
+        }
     }
 
     impl Employee {

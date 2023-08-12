@@ -1,4 +1,5 @@
 use crate::app::data_manager::manager::DbTool;
+use crate::types::structs::{DisplayInfo, Employee};
 use tokio::runtime::Runtime;
 
 mod utils {
@@ -26,6 +27,9 @@ impl App {
 
     pub fn run(&mut self) {
         let rt = Runtime::new().unwrap();
-        let employees = rt.block_on(self.db_manager.get_employee_table());
+        let employees: Vec<Employee> = rt.block_on(self.db_manager.get_table());
+        for emp in employees {
+            println!("{}", emp.get_id().to_string());
+        }
     }
 }
