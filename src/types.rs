@@ -1,6 +1,7 @@
 pub mod structs {
 
     use crate::types::enums::MediaType;
+    use std::fmt;
 
     pub trait DisplayInfo {
         fn get_id(&self) -> u16;
@@ -9,7 +10,7 @@ pub mod structs {
 
     #[derive(serde::Deserialize, serde::Serialize, Debug)]
     pub struct Employee {
-        pub id: u16,
+        id: u16,
         name: String,
         department: String,
         boss_id: u16,
@@ -26,6 +27,33 @@ pub mod structs {
         }
         fn get_table_name() -> &'static str {
             "Employee"
+        }
+    }
+
+    impl fmt::Display for Employee {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(
+                f,
+                "Employee Information:\n\
+                 ID: {}\n\
+                 Name: {}\n\
+                 Department: {}\n\
+                 Boss ID: {}\n\
+                 Project: {}\n\
+                 Subject: {}\n\
+                 Allocated Budget: {}\n\
+                 Permission Level: {}\n\
+                 Password: {}",
+                self.id,
+                self.name,
+                self.department,
+                self.boss_id,
+                self.project,
+                self.subject,
+                self.alloc_budget,
+                self.perm_level,
+                self.password
+            )
         }
     }
 
@@ -58,7 +86,9 @@ pub mod structs {
         }
     }
 
+    #[derive(serde::Deserialize, serde::Serialize, Debug)]
     pub struct Media {
+        id: u16,
         media_type: MediaType,
         name: String,
         borrowable: bool,
@@ -66,8 +96,30 @@ pub mod structs {
         renter: String,
     }
 
+    impl fmt::Display for Media {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(
+                f,
+                "Media Information:\n\
+             ID: {}\n\
+             Media Type: {}\n\
+             Name: {}\n\
+             Borrowable: {}\n\
+             Vendor: {}\n\
+             Renter: {}",
+                self.id,
+                self.media_type,
+                self.name,
+                if self.borrowable { "Yes" } else { "No" },
+                self.vendor,
+                self.renter
+            )
+        }
+    }
+
     impl Media {
         pub fn new(
+            id: u16,
             media_type: MediaType,
             name: String,
             borrowable: bool,
@@ -75,6 +127,7 @@ pub mod structs {
             renter: String,
         ) -> Media {
             Media {
+                id,
                 media_type,
                 name,
                 borrowable,
@@ -83,14 +136,38 @@ pub mod structs {
             }
         }
     }
+
+    impl DisplayInfo for Media {
+        fn get_id(&self) -> u16 {
+            self.id
+        }
+
+        fn get_table_name() -> &'static str {
+            "Media"
+        }
+    }
 }
 
 pub mod enums {
+    use std::fmt;
+
+    #[derive(serde::Deserialize, serde::Serialize, Debug)]
     pub enum MediaType {
         Book,
         VideoGame,
         Movie,
         Music,
+    }
+
+    impl fmt::Display for MediaType {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            match self {
+                MediaType::Book => write!(f, "Book"),
+                MediaType::VideoGame => write!(f, "Video Game"),
+                MediaType::Movie => write!(f, "Movie"),
+                MediaType::Music => write!(f, "Music"),
+            }
+        }
     }
 }
 

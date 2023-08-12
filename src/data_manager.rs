@@ -1,5 +1,5 @@
-use crate::types;
-use crate::types::structs::{DisplayInfo, Employee};
+use crate::types::enums::MediaType;
+use crate::types::structs::{DisplayInfo, Employee, Media};
 use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use std::fmt::Display;
@@ -14,14 +14,16 @@ pub mod manager {
         FailConnect,
         FailQuery,
         EntryExists,
+        BadEntry,
     }
 
-    impl std::fmt::Display for DbToolError {
+    impl Display for DbToolError {
         fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
             match *self {
                 DbToolError::FailConnect => write!(f, "Invalid URL"),
                 DbToolError::FailQuery => write!(f, "Failed to execute query"),
                 DbToolError::EntryExists => write!(f, "Entry already exists"),
+                DbToolError::BadEntry => write!(f, "Entry already exists"),
             }
         }
     }
@@ -58,7 +60,7 @@ pub mod manager {
             match resp.text().await {
                 Ok(s) => match serde_json::from_str(&s) {
                     Ok(vec_t) => vec_t,
-                    Err(err) => panic!("Error Parsing Employee Data -> {}", err),
+                    Err(err) => panic!("Error parsing data -> {}", err),
                 },
                 Err(_) => panic!("Invalid table settings. Unable to get data."),
             }
@@ -115,7 +117,7 @@ mod tests {
 
     fn create_test_employee() -> Employee {
         Employee::new(
-            1008,
+            1005,
             String::from("John Doe"),
             String::from("IT"),
             1,
@@ -128,10 +130,27 @@ mod tests {
         .unwrap()
     }
 
+    fn create_test_media() -> Media {
+        Media::new(
+            1005,
+            MediaType::VideoGame,
+            String::from("Sonic Unleashed"),
+            true,
+            String::from("Sega"),
+            String::from("Renter"),
+        )
+    }
+
     #[test]
     fn serialize_employee() {
         let test_employee = create_test_employee();
-        assert!(serde_json::to_value(test_employee).is_ok());
+        assert!(serde_json::to_value::<Employee>(test_employee).is_ok());
+    }
+
+    #[test]
+    fn serialize_media() {
+        let test_media = create_test_media();
+        assert!(serde_json::to_value::<Media>(test_media).is_ok())
     }
 
     #[tokio::test]

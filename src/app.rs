@@ -1,5 +1,6 @@
 use crate::app::data_manager::manager::DbTool;
-use crate::types::structs::{DisplayInfo, Employee};
+use crate::types::structs::{DisplayInfo, Employee, Media};
+use std::io;
 use tokio::runtime::Runtime;
 
 mod utils {
@@ -27,9 +28,40 @@ impl App {
 
     pub fn run(&mut self) {
         let rt = Runtime::new().unwrap();
+        println!("Welcome to the library management system");
+        loop {
+            println!(
+                "Enter an option:\n\
+            \t1: View Employees\n\
+            \t2: View Media\n"
+            );
+            let mut buffer = String::new();
+            io::stdin().read_line(&mut buffer).unwrap();
+            match buffer.trim() {
+                "1" => {
+                    &self.print_employees(&rt);
+                }
+                "2" => {
+                    &self.print_media(&rt);
+                }
+                _ => {
+                    println!("Not a valid option");
+                }
+            }
+        }
+    }
+
+    fn print_employees(&mut self, rt: &Runtime) {
         let employees: Vec<Employee> = rt.block_on(self.db_manager.get_table());
-        for emp in employees {
-            println!("{}", emp.get_id().to_string());
+        for employee in employees {
+            println!("{}", employee.to_string())
+        }
+    }
+
+    fn print_media(&mut self, rt: &Runtime) {
+        let media: Vec<Media> = rt.block_on(self.db_manager.get_table());
+        for med in media {
+            println!("{}", med.to_string())
         }
     }
 }
