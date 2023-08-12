@@ -4,7 +4,7 @@ pub mod loading {
     use std::io::BufReader;
 
     pub fn load_db_settings() -> Vec<String> {
-        let settings: [&str; 2] = ["endpoint", "password"];
+        let settings: [&str; 3] = ["endpoint", "api_key", "salt"];
         let mut res_settings: Vec<String> = Vec::new();
 
         let mut contents = String::new();
@@ -21,5 +21,15 @@ pub mod loading {
             res_settings.push(config.get("DBSettings", setting).unwrap());
         }
         res_settings
+    }
+}
+
+pub mod network {
+    pub async fn test_network(url: &str) -> bool {
+        let response = reqwest::get(url).await;
+        match response {
+            Ok(_) => true,
+            Err(_) => false,
+        }
     }
 }

@@ -24,5 +24,8 @@ impl App {
         App { db_manager }
     }
 
-    pub fn run(&mut self) {}
+    pub fn run(&mut self) {
+        let rt = Runtime::new().unwrap();
+        rt.block_on(self.db_manager.get_employee_table());
+    }
 }

@@ -2,14 +2,14 @@ pub mod structs {
 
     use crate::types::enums::MediaType;
 
+    #[derive(serde::Deserialize, Debug)]
     pub struct Employee {
-        emp_id: String,
+        id: u8,
         name: String,
         department: String,
-        boss: String,
+        boss_id: String,
         project: String,
         subject: String,
-        req_materials: Vec<String>,
         alloc_budget: u16,
         perm_level: u8,
         password: String,
@@ -17,13 +17,12 @@ pub mod structs {
 
     impl Employee {
         pub fn new(
-            emp_id: String,
+            id: u8,
             name: String,
             department: String,
-            boss: String,
+            boss_id: String,
             project: String,
             subject: String,
-            req_materials: Vec<String>,
             alloc_budget: u16,
             perm_level: u8,
             password: String,
@@ -32,13 +31,12 @@ pub mod structs {
                 return Err("Password should be at least 8 characters long.");
             }
             Ok(Employee {
-                emp_id,
+                id,
                 name,
                 department,
-                boss,
+                boss_id,
                 project,
                 subject,
-                req_materials,
                 alloc_budget,
                 perm_level,
                 password,
