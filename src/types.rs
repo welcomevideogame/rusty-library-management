@@ -3,10 +3,8 @@ pub mod structs {
     use crate::types::enums::MediaType;
     use std::fmt;
 
-    pub trait DisplayInfo {
-        fn get_id(&self) -> u16;
-        fn get_table_name() -> &'static str;
-    }
+    // Struct Definitions
+    // ---------------------------------------------------------------
 
     #[derive(serde::Deserialize, serde::Serialize, Debug)]
     pub struct Employee {
@@ -19,6 +17,24 @@ pub mod structs {
         alloc_budget: u16,
         perm_level: u16,
         password: String,
+    }
+
+    #[derive(serde::Deserialize, serde::Serialize, Debug)]
+    pub struct Media {
+        id: u16,
+        media_type: MediaType,
+        name: String,
+        borrowable: bool,
+        vendor: String,
+        renter: String,
+    }
+
+    // Trait Implementation
+    // ---------------------------------------------------------------
+
+    pub trait DisplayInfo {
+        fn get_id(&self) -> u16;
+        fn get_table_name() -> &'static str;
     }
 
     impl DisplayInfo for Employee {
@@ -57,6 +73,39 @@ pub mod structs {
         }
     }
 
+    impl DisplayInfo for Media {
+        fn get_id(&self) -> u16 {
+            self.id
+        }
+
+        fn get_table_name() -> &'static str {
+            "Media"
+        }
+    }
+
+    impl fmt::Display for Media {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(
+                f,
+                "Media Information:\n\
+             ID: {}\n\
+             Media Type: {}\n\
+             Name: {}\n\
+             Borrowable: {}\n\
+             Vendor: {}\n\
+             Renter: {}",
+                self.id,
+                self.media_type,
+                self.name,
+                if self.borrowable { "Yes" } else { "No" },
+                self.vendor,
+                self.renter
+            )
+        }
+    }
+
+    // Constructors and Getters/Setters
+    // ---------------------------------------------------------------
     impl Employee {
         pub fn new(
             id: u16,
@@ -84,36 +133,59 @@ pub mod structs {
                 password,
             })
         }
-    }
-
-    #[derive(serde::Deserialize, serde::Serialize, Debug)]
-    pub struct Media {
-        id: u16,
-        media_type: MediaType,
-        name: String,
-        borrowable: bool,
-        vendor: String,
-        renter: String,
-    }
-
-    impl fmt::Display for Media {
-        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            write!(
-                f,
-                "Media Information:\n\
-             ID: {}\n\
-             Media Type: {}\n\
-             Name: {}\n\
-             Borrowable: {}\n\
-             Vendor: {}\n\
-             Renter: {}",
-                self.id,
-                self.media_type,
-                self.name,
-                if self.borrowable { "Yes" } else { "No" },
-                self.vendor,
-                self.renter
-            )
+        pub fn id(&self) -> u16 {
+            self.id
+        }
+        pub fn name(&self) -> &str {
+            &self.name
+        }
+        pub fn department(&self) -> &str {
+            &self.department
+        }
+        pub fn boss_id(&self) -> u16 {
+            self.boss_id
+        }
+        pub fn project(&self) -> &str {
+            &self.project
+        }
+        pub fn subject(&self) -> &str {
+            &self.subject
+        }
+        pub fn alloc_budget(&self) -> u16 {
+            self.alloc_budget
+        }
+        pub fn perm_level(&self) -> u16 {
+            self.perm_level
+        }
+        pub fn password(&self) -> &str {
+            &self.password
+        }
+        pub fn set_id(&mut self, id: u16) {
+            self.id = id;
+        }
+        pub fn set_name(&mut self, name: String) {
+            self.name = name;
+        }
+        pub fn set_department(&mut self, department: String) {
+            self.department = department;
+        }
+        pub fn set_boss_id(&mut self, boss_id: u16) {
+            self.boss_id = boss_id;
+        }
+        pub fn set_project(&mut self, project: String) {
+            self.project = project;
+        }
+        pub fn set_subject(&mut self, subject: String) {
+            self.subject = subject;
+        }
+        pub fn set_alloc_budget(&mut self, alloc_budget: u16) {
+            self.alloc_budget = alloc_budget;
+        }
+        pub fn set_perm_level(&mut self, perm_level: u16) {
+            self.perm_level = perm_level;
+        }
+        pub fn set_password(&mut self, password: String) {
+            self.password = password;
         }
     }
 
@@ -135,15 +207,41 @@ pub mod structs {
                 renter,
             }
         }
-    }
-
-    impl DisplayInfo for Media {
-        fn get_id(&self) -> u16 {
+        pub fn id(&self) -> u16 {
             self.id
         }
-
-        fn get_table_name() -> &'static str {
-            "Media"
+        pub fn media_type(&self) -> &MediaType {
+            &self.media_type
+        }
+        pub fn name(&self) -> &str {
+            &self.name
+        }
+        pub fn borrowable(&self) -> bool {
+            self.borrowable
+        }
+        pub fn vendor(&self) -> &str {
+            &self.vendor
+        }
+        pub fn renter(&self) -> &str {
+            &self.renter
+        }
+        pub fn set_id(&mut self, id: u16) {
+            self.id = id;
+        }
+        pub fn set_media_type(&mut self, media_type: MediaType) {
+            self.media_type = media_type;
+        }
+        pub fn set_name(&mut self, name: String) {
+            self.name = name;
+        }
+        pub fn set_borrowable(&mut self, borrowable: bool) {
+            self.borrowable = borrowable;
+        }
+        pub fn set_vendor(&mut self, vendor: String) {
+            self.vendor = vendor;
+        }
+        pub fn set_renter(&mut self, renter: String) {
+            self.renter = renter;
         }
     }
 }
@@ -170,6 +268,9 @@ pub mod enums {
         }
     }
 }
+
+// Tests
+// ---------------------------------------------------------------
 
 #[cfg(test)]
 mod tests {

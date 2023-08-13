@@ -1,7 +1,8 @@
-use crate::types::enums::MediaType;
-use crate::types::structs::{DisplayInfo, Employee, Media};
+use crate::types::structs::DisplayInfo;
 use serde::de::DeserializeOwned;
-use serde::Deserialize;
+use std::fmt;
+
+use serde::Serialize;
 use std::fmt::Display;
 
 pub mod manager {
@@ -18,7 +19,7 @@ pub mod manager {
     }
 
     impl Display for DbToolError {
-        fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             match *self {
                 DbToolError::FailConnect => write!(f, "Invalid URL"),
                 DbToolError::FailQuery => write!(f, "Failed to execute query"),
@@ -50,9 +51,11 @@ pub mod manager {
         }
 
         pub async fn get_table<T: DisplayInfo + DeserializeOwned>(&self) -> Vec<T> {
+            let table_name = format!("{}{}", self.salt, T::get_table_name());
+            println!("{}", table_name);
             let resp = self
                 .client
-                .from(T::get_table_name())
+                .from(table_name)
                 .select("*")
                 .execute()
                 .await
@@ -66,40 +69,63 @@ pub mod manager {
             }
         }
 
-        pub async fn database_insert<T: DisplayInfo + serde::Serialize>(
+        pub async fn database_insert<T: DisplayInfo + Serialize>(
             &self,
-            obj: T,
+            obj: &T,
         ) -> Result<(), DbToolError> {
             let _ = self
                 .check_entry_exists::<T>(&obj)
                 .await
                 .map_err(|_| return DbToolError::EntryExists)?;
-
+            let table_name = format!("{}{}", self.salt, T::get_table_name());
             let body = serde_json::to_value(obj).unwrap();
             let resp = self
                 .client
-                .from(T::get_table_name())
+                .from(table_name)
                 .insert(body.to_string())
                 .execute()
                 .await;
-            let body = resp.expect("").text().await;
+            let body = resp.expect("Unknown Error").text().await;
             match body {
                 Ok(_) => Ok(()),
                 Err(_) => Err(DbToolError::FailConnect),
             }
         }
 
+        pub async fn database_update<T: DisplayInfo + Serialize>(
+            &self,
+            obj: &T,
+        ) -> Result<(), DbToolError> {
+            if let Ok(()) = self.check_entry_exists::<T>(&obj).await {
+                return Err(DbToolError::BadEntry);
+            }
+
+            let table_name = format!("{}{}", self.salt, T::get_table_name());
+            let body = serde_json::to_value(&obj).unwrap();
+            self.client
+                .from(table_name)
+                .eq("id", obj.get_id().to_string())
+                .update(body.to_string())
+                .execute()
+                .await
+                .expect("Unknown Error")
+                .text()
+                .await
+                .map_err(|_| DbToolError::EntryExists)?;
+            Ok(())
+        }
+
         async fn check_entry_exists<T: DisplayInfo>(&self, obj: &T) -> Result<(), DbToolError> {
+            let table_name = format!("{}{}", self.salt, T::get_table_name());
             let resp = self
                 .client
-                .from(T::get_table_name())
+                .from(table_name)
                 .eq("id", obj.get_id().to_string())
                 .execute()
                 .await;
             match resp.expect("Unknown error").text().await {
                 Ok(body) => {
                     if !body.contains("id") {
-                        // Just any arbitrary column name
                         Ok(())
                     } else {
                         Err(DbToolError::EntryExists)
@@ -111,9 +137,14 @@ pub mod manager {
     }
 }
 
+// Tests
+// ---------------------------------------------------------------
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::types::enums::MediaType;
+    use crate::types::structs::{Employee, Media};
 
     fn create_test_employee() -> Employee {
         Employee::new(
@@ -160,7 +191,19 @@ mod tests {
 
         let test_employee = create_test_employee();
         assert!(tool
-            .database_insert::<Employee>(test_employee)
+            .database_insert::<Employee>(&test_employee)
+            .await
+            .is_ok());
+    }
+
+    #[tokio::test]
+    async fn update_employee() {
+        let settings = super::super::utils::loading::load_db_settings();
+        let tool = manager::DbTool::new(&settings).await.unwrap();
+        let mut test_employee = create_test_employee();
+        test_employee.set_name("Jane Doe".to_owned());
+        assert!(tool
+            .database_update::<Employee>(&test_employee)
             .await
             .is_ok());
     }

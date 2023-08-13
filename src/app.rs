@@ -1,5 +1,5 @@
 use crate::app::data_manager::manager::DbTool;
-use crate::types::structs::{DisplayInfo, Employee, Media};
+use crate::types::structs::{Employee, Media};
 use std::io;
 use tokio::runtime::Runtime;
 
@@ -39,10 +39,10 @@ impl App {
             io::stdin().read_line(&mut buffer).unwrap();
             match buffer.trim() {
                 "1" => {
-                    &self.print_employees(&rt);
+                    self.print_employees(&rt);
                 }
                 "2" => {
-                    &self.print_media(&rt);
+                    self.print_media(&rt);
                 }
                 _ => {
                     println!("Not a valid option");
