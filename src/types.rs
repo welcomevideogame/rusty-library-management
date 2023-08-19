@@ -6,6 +6,7 @@ pub mod structs {
     // Struct Definitions
     // ---------------------------------------------------------------
 
+    #[allow(dead_code)]
     #[derive(serde::Deserialize, serde::Serialize, Debug)]
     pub struct Employee {
         id: u16,
@@ -19,6 +20,7 @@ pub mod structs {
         password: String,
     }
 
+    #[allow(dead_code)]
     #[derive(serde::Deserialize, serde::Serialize, Debug)]
     pub struct Media {
         id: u16,
@@ -38,6 +40,7 @@ pub mod structs {
         fn get_table_name() -> &'static str;
     }
 
+    #[allow(dead_code)]
     impl DisplayInfo for Employee {
         fn get_id(&self) -> u16 {
             self.id
@@ -113,6 +116,7 @@ pub mod structs {
 
     // Constructors and Getters/Setters
     // ---------------------------------------------------------------
+    #[allow(dead_code)]
     impl Employee {
         pub fn new(
             id: u16,
@@ -196,6 +200,7 @@ pub mod structs {
         }
     }
 
+    #[allow(dead_code)]
     impl Media {
         pub fn new(
             id: u16,

@@ -72,10 +72,9 @@ pub mod manager {
             &self,
             obj: &T,
         ) -> Result<(), DbToolError> {
-            let _ = self
-                .check_entry_exists::<T>(&obj)
+            self.check_entry_exists::<T>(obj)
                 .await
-                .map_err(|_| return DbToolError::EntryExists)?;
+                .map_err(|_| DbToolError::EntryExists)?;
             let table_name = format!("{}{}", self.salt, T::get_table_name());
             let body = serde_json::to_value(obj).unwrap();
             let resp = self
@@ -94,12 +93,12 @@ pub mod manager {
             &self,
             obj: &T,
         ) -> Result<(), DbToolError> {
-            if let Ok(()) = self.check_entry_exists::<T>(&obj).await {
+            if let Ok(()) = self.check_entry_exists::<T>(obj).await {
                 return Err(DbToolError::BadEntry);
             }
 
             let table_name = format!("{}{}", self.salt, T::get_table_name());
-            let body = serde_json::to_value(&obj).unwrap();
+            let body = serde_json::to_value(obj).unwrap();
             self.client
                 .from(table_name)
                 .eq("id", obj.get_id().to_string())
