@@ -52,7 +52,6 @@ pub mod manager {
 
         pub async fn get_table<T: DisplayInfo + DeserializeOwned>(&self) -> Vec<T> {
             let table_name = format!("{}{}", self.salt, T::get_table_name());
-            println!("{}", table_name);
             let resp = self
                 .client
                 .from(table_name)
@@ -85,8 +84,7 @@ pub mod manager {
                 .insert(body.to_string())
                 .execute()
                 .await;
-            let body = resp.expect("Unknown Error").text().await;
-            match body {
+            match resp.expect("Unknown Error").text().await {
                 Ok(_) => Ok(()),
                 Err(_) => Err(DbToolError::FailConnect),
             }

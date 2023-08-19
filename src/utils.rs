@@ -1,4 +1,6 @@
 pub mod loading {
+    use crate::types::structs::DisplayInfo;
+    use std::collections::HashMap;
     use std::fs::File;
     use std::io::prelude::*;
     use std::io::BufReader;
@@ -22,6 +24,10 @@ pub mod loading {
         }
         res_settings
     }
+
+    pub fn vec_to_hashmap<T: DisplayInfo>(obj_vec: Vec<T>) -> HashMap<u16, T> {
+        obj_vec.into_iter().map(|obj| (obj.get_id(), obj)).collect()
+    }
 }
 
 pub mod network {
@@ -31,5 +37,18 @@ pub mod network {
             Ok(_) => true,
             Err(_) => false,
         }
+    }
+}
+
+pub mod user {
+    use std::io;
+
+    pub fn get_input() -> String {
+        let mut buffer = String::new();
+        io::stdin()
+            .read_line(&mut buffer)
+            .ok()
+            .unwrap_or_else(|| String::new().parse().unwrap());
+        buffer.trim().to_string()
     }
 }

@@ -34,12 +34,16 @@ pub mod structs {
 
     pub trait DisplayInfo {
         fn get_id(&self) -> u16;
+        fn get_name(&self) -> &str;
         fn get_table_name() -> &'static str;
     }
 
     impl DisplayInfo for Employee {
         fn get_id(&self) -> u16 {
             self.id
+        }
+        fn get_name(&self) -> &str {
+            self.name.as_str()
         }
         fn get_table_name() -> &'static str {
             "Employee"
@@ -77,6 +81,9 @@ pub mod structs {
         fn get_id(&self) -> u16 {
             self.id
         }
+        fn get_name(&self) -> &str {
+            self.name.as_str()
+        }
 
         fn get_table_name() -> &'static str {
             "Media"
@@ -88,12 +95,12 @@ pub mod structs {
             write!(
                 f,
                 "Media Information:\n\
-             ID: {}\n\
-             Media Type: {}\n\
-             Name: {}\n\
-             Borrowable: {}\n\
-             Vendor: {}\n\
-             Renter: {}",
+                 ID: {}\n\
+                 Media Type: {}\n\
+                 Name: {}\n\
+                 Borrowable: {}\n\
+                 Vendor: {}\n\
+                 Renter: {}",
                 self.id,
                 self.media_type,
                 self.name,
