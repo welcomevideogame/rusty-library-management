@@ -1,7 +1,8 @@
 use crate::app::data_manager::manager::DbTool;
 use crate::types::structs::{DisplayInfo, Employee, Media};
+use serde_json::{json, Value};
 use std::collections::HashMap;
-use std::hash::Hash;
+use std::error::Error;
 
 use tokio::runtime::Runtime;
 
@@ -16,6 +17,7 @@ pub struct App {
     db_manager: DbTool,
     employees: HashMap<u16, Employee>,
     media: HashMap<u16, Media>,
+    rt: Runtime,
 }
 
 impl App {
@@ -33,12 +35,12 @@ impl App {
             db_manager,
             employees,
             media,
+            rt,
         }
     }
 
     pub fn run(&mut self) {
-        let rt = Runtime::new().unwrap();
-        self.update_data(&rt);
+        self.update_data();
         println!("Welcome to the library management system");
         loop {
             println!(
@@ -55,9 +57,10 @@ impl App {
         }
     }
 
-    pub fn update_data(&mut self, rt: &Runtime) {
-        self.employees = utils::loading::vec_to_hashmap(rt.block_on(self.db_manager.get_table()));
-        self.media = utils::loading::vec_to_hashmap(rt.block_on(self.db_manager.get_table()));
+    pub fn update_data(&mut self) {
+        self.employees =
+            utils::loading::vec_to_hashmap(self.rt.block_on(self.db_manager.get_table()));
+        self.media = utils::loading::vec_to_hashmap(self.rt.block_on(self.db_manager.get_table()));
     }
 
     fn item_selection<T: DisplayInfo + ToString>(&self, items: &HashMap<u16, T>) -> Option<()> {
@@ -74,7 +77,11 @@ impl App {
         let response = utils::user::get_input();
         match response.as_str() {
             "1" => println!("{}", obj.to_string()),
-            "2" => todo!("change information"),
+            "2" => {
+                if let Err(err) = self.update_item(obj) {
+                    println!("{}", err);
+                }
+            }
             "3" => todo!("deleting entry"),
             "4" | _ => (),
         }
@@ -94,5 +101,33 @@ impl App {
             Err(_) => return None,
         };
         items.get(&response)
+    }
+
+    fn update_item<T: DisplayInfo>(&self, obj: &T) -> Result<(), &str> {
+        let mut json_obj = serde_json::to_value(&obj).unwrap();
+        let keys: Vec<String> = json_obj.as_object().unwrap().keys().cloned().collect();
+
+        println!("Enter the value that you want to change");
+        for (key, value) in json_obj.as_object().unwrap().keys().enumerate() {
+            println!("{} - {}", key + 1, value)
+        }
+
+        let response: usize = match utils::user::get_input().trim().parse() {
+            Ok(num) => num,
+            Err(_) => return Err("Invalid number"),
+        };
+        let field_name = &keys[response - 1];
+        println!("Enter a new value for {}", field_name);
+
+        let new_value = utils::user::get_input().trim().to_string();
+        json_obj[field_name] = Value::String(new_value);
+
+        let updated_obj: T =
+            serde_json::from_value(json_obj).map_err(|_| "Failed to update object")?;
+
+        self.rt
+            .block_on(self.db_manager.database_update(&updated_obj))
+            .map_err(|_| "Failed to update on database")?;
+        Ok(())
     }
 }
