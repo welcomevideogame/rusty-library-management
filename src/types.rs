@@ -7,7 +7,7 @@ pub mod structs {
     // Struct Definitions
     // ---------------------------------------------------------------
 
-    #[derive(serde::Deserialize, serde::Serialize, Debug)]
+    #[derive(serde::Deserialize, serde::Serialize, Debug, Default)]
     pub struct Employee {
         id: u16,
         name: String,
@@ -20,7 +20,7 @@ pub mod structs {
         password: String,
     }
 
-    #[derive(serde::Deserialize, serde::Serialize, Debug)]
+    #[derive(serde::Deserialize, serde::Serialize, Debug, Default)]
     pub struct Media {
         id: u16,
         media_type: MediaType,
@@ -114,6 +114,7 @@ pub mod structs {
 
     // Constructors and Getters/Setters
     // ---------------------------------------------------------------
+    #[allow(clippy::too_many_arguments)]
     impl Employee {
         pub fn new(
             id: u16,
@@ -140,12 +141,6 @@ pub mod structs {
                 perm_level,
                 password,
             })
-        }
-        pub fn id(&self) -> u16 {
-            self.id
-        }
-        pub fn name(&self) -> &str {
-            &self.name
         }
         pub fn department(&self) -> &str {
             &self.department
@@ -215,14 +210,8 @@ pub mod structs {
                 renter,
             }
         }
-        pub fn id(&self) -> u16 {
-            self.id
-        }
         pub fn media_type(&self) -> &MediaType {
             &self.media_type
-        }
-        pub fn name(&self) -> &str {
-            &self.name
         }
         pub fn borrowable(&self) -> bool {
             self.borrowable
@@ -257,12 +246,14 @@ pub mod structs {
 pub mod enums {
     use std::fmt;
 
-    #[derive(serde::Deserialize, serde::Serialize, Debug)]
+    #[derive(serde::Deserialize, serde::Serialize, Debug, Default)]
     pub enum MediaType {
         Book,
         VideoGame,
         Movie,
         Music,
+        #[default]
+        None,
     }
 
     impl fmt::Display for MediaType {
@@ -272,6 +263,7 @@ pub mod enums {
                 MediaType::VideoGame => write!(f, "Video Game"),
                 MediaType::Movie => write!(f, "Movie"),
                 MediaType::Music => write!(f, "Music"),
+                MediaType::None => write!(f, "None"),
             }
         }
     }

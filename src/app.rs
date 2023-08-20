@@ -1,8 +1,7 @@
 use crate::app::data_manager::manager::DbTool;
 use crate::types::structs::{DisplayInfo, Employee, Media};
-use serde_json::{json, Value};
+use serde_json::Value;
 use std::collections::HashMap;
-use std::error::Error;
 
 use tokio::runtime::Runtime;
 
@@ -46,12 +45,22 @@ impl App {
             println!(
                 "Enter an option:\n\
             \t1: View Employees\n\
-            \t2: View Media\n"
+            \t2: View Media\n\
+            \t3: Create Employee\n\
+            \t4: Create Media"
             );
             let response = utils::user::get_input();
             match response.as_str() {
                 "1" => _ = self.item_selection::<Employee>(&self.employees),
                 "2" => _ = self.item_selection::<Media>(&self.media),
+                "3" => match self.create_obj::<Employee>() {
+                    Ok(_) => println!("Successfully created the employee!"),
+                    Err(e) => println!("Failed to create the employee -> {}", e),
+                },
+                "4" => match self.create_obj::<Media>() {
+                    Ok(_) => println!("Successfully created the media object!"),
+                    Err(e) => println!("Failed to create the media object -> {}", e),
+                },
                 _ => (),
             }
         }
@@ -82,10 +91,42 @@ impl App {
                     println!("{}", err);
                 }
             }
-            "3" => todo!("deleting entry"),
-            "4" | _ => (),
+            "3" => todo!(),
+            "4" => (),
+            _ => (),
         }
         Some(())
+    }
+
+    fn create_obj<T: DisplayInfo + Default + serde::Serialize + serde::de::DeserializeOwned>(
+        &self,
+    ) -> Result<(), String> {
+        let mut json_obj = serde_json::to_value(T::default()).unwrap();
+        let keys: Vec<String> = json_obj.as_object().unwrap().keys().cloned().collect();
+        for key in &keys {
+            println!("Enter a new value for {}", key);
+            let input = utils::user::get_input();
+            let original_value = &json_obj[&key];
+            let new_value = match original_value {
+                Value::Bool(_) => Value::Bool(
+                    input
+                        .parse()
+                        .map_err(|_| format!("Expected a boolean value for {}", key))?,
+                ),
+                Value::Number(_) => Value::Number(
+                    input
+                        .parse()
+                        .map_err(|_| format!("Expected a numeric value for {}", key))?,
+                ),
+                _ => Value::String(input),
+            };
+            json_obj[&key] = new_value;
+        }
+        let obj: T = serde_json::from_value(json_obj).map_err(|e| e.to_string())?;
+        self.rt
+            .block_on(self.db_manager.database_insert(&obj))
+            .map_err(|_| "Failed to update on database".to_string())?;
+        Ok(())
     }
 
     fn list_items<'a, T: DisplayInfo + ToString>(
@@ -104,7 +145,7 @@ impl App {
     }
 
     fn update_item<T: DisplayInfo>(&self, obj: &T) -> Result<(), &str> {
-        let mut json_obj = serde_json::to_value(&obj).unwrap();
+        let mut json_obj = serde_json::to_value(obj).unwrap();
         let keys: Vec<String> = json_obj.as_object().unwrap().keys().cloned().collect();
 
         println!("Enter the value that you want to change");

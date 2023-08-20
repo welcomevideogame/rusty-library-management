@@ -32,11 +32,7 @@ pub mod loading {
 
 pub mod network {
     pub async fn test_network(url: &str) -> bool {
-        let response = reqwest::get(url).await;
-        match response {
-            Ok(_) => true,
-            Err(_) => false,
-        }
+        reqwest::get(url).await.is_ok()
     }
 }
 
