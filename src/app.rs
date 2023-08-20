@@ -1,4 +1,4 @@
-use crate::app::data_manager::manager::DbTool;
+use crate::app::data_manager::manager::{DbTool, DbToolError};
 use crate::types::structs::{DisplayInfo, Employee, Media};
 use serde_json::Value;
 use std::collections::HashMap;
@@ -88,10 +88,14 @@ impl App {
             "1" => println!("{}", obj.to_string()),
             "2" => {
                 if let Err(err) = self.update_item(obj) {
-                    println!("{}", err);
+                    println!("Failed to change information -> {}", err);
                 }
             }
-            "3" => todo!(),
+            "3" => {
+                if let Err(err) = self.delete_item(obj) {
+                    println!("Failed to delete the entry -> {}", err)
+                }
+            }
             "4" => (),
             _ => (),
         }
@@ -169,6 +173,11 @@ impl App {
         self.rt
             .block_on(self.db_manager.database_update(&updated_obj))
             .map_err(|_| "Failed to update on database")?;
+        Ok(())
+    }
+
+    fn delete_item<T: DisplayInfo>(&self, item: &T) -> Result<(), DbToolError> {
+        self.rt.block_on(self.db_manager.database_delete(item))?;
         Ok(())
     }
 }

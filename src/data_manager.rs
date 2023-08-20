@@ -24,7 +24,7 @@ pub mod manager {
                 DbToolError::FailConnect => write!(f, "Invalid URL"),
                 DbToolError::FailQuery => write!(f, "Failed to execute query"),
                 DbToolError::EntryExists => write!(f, "Entry already exists"),
-                DbToolError::BadEntry => write!(f, "Entry already exists"),
+                DbToolError::BadEntry => write!(f, "Entry does not exist"),
             }
         }
     }
@@ -109,6 +109,27 @@ pub mod manager {
                 .text()
                 .await
                 .map_err(|_| DbToolError::EntryExists)?;
+            Ok(())
+        }
+
+        pub async fn database_delete<T: DisplayInfo + Serialize>(
+            &self,
+            obj: &T,
+        ) -> Result<(), DbToolError> {
+            if let Ok(()) = self.check_entry_exists::<T>(obj).await {
+                return Err(DbToolError::BadEntry);
+            }
+            let table_name = format!("{}{}", self.salt, T::get_table_name());
+            self.client
+                .from(table_name)
+                .eq("id", obj.get_id().to_string())
+                .delete()
+                .execute()
+                .await
+                .expect("Unknown Error")
+                .text()
+                .await
+                .map_err(|_| DbToolError::FailQuery)?;
             Ok(())
         }
 
