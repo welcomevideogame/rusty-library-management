@@ -1,5 +1,6 @@
 pub mod structs {
 
+    use super::super::utils;
     use crate::types::enums::MediaType;
     use serde::{Deserialize, Serialize};
     use std::fmt;
@@ -37,6 +38,7 @@ pub mod structs {
         fn get_id(&self) -> u16;
         fn get_name(&self) -> &str;
         fn get_table_name() -> &'static str;
+        fn additional_setup(&mut self);
     }
 
     impl DisplayInfo for Employee {
@@ -48,6 +50,9 @@ pub mod structs {
         }
         fn get_table_name() -> &'static str {
             "Employee"
+        }
+        fn additional_setup(&mut self) {
+            self.password = utils::security::hash_str(self.password.as_str(), None);
         }
     }
 
@@ -85,9 +90,11 @@ pub mod structs {
         fn get_name(&self) -> &str {
             self.name.as_str()
         }
-
         fn get_table_name() -> &'static str {
             "Media"
+        }
+        fn additional_setup(&mut self) {
+            // TODO - Nothing yet
         }
     }
 
@@ -139,7 +146,7 @@ pub mod structs {
                 subject,
                 alloc_budget,
                 perm_level,
-                password,
+                password: utils::security::hash_str(password.as_str(), None),
             })
         }
         pub fn department(&self) -> &str {
@@ -188,7 +195,7 @@ pub mod structs {
             self.perm_level = perm_level;
         }
         pub fn set_password(&mut self, password: String) {
-            self.password = password;
+            self.password = utils::security::hash_str(password.as_str(), None);
         }
     }
 

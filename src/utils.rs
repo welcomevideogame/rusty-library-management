@@ -48,3 +48,37 @@ pub mod user {
         buffer.trim().to_string()
     }
 }
+
+pub mod security {
+    use sha2::{Digest, Sha256};
+    use std::borrow::Cow;
+
+    pub fn hash_str(s: &str, salt: Option<&str>) -> String {
+        let mut hasher = Sha256::new();
+        let s: Cow<str> = match salt {
+            Some(chars) => format!("{}{}", chars, s).into(),
+            None => s.into(),
+        };
+        hasher.update(s.as_bytes());
+        let result = hasher.finalize();
+        format!("{:x}", result)
+    }
+}
+
+// Tests
+// ---------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use crate::utils::security;
+
+    #[test]
+    fn test_hashing() {
+        let test_string = "hello world";
+        let hash_string = security::hash_str(test_string, None);
+        assert_eq!(
+            "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9",
+            hash_string
+        )
+    }
+}

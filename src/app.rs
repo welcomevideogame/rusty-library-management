@@ -1,13 +1,10 @@
+use super::utils;
 use crate::app::data_manager::manager::{DbTool, DbToolError};
 use crate::types::structs::{DisplayInfo, Employee, Media};
 use serde_json::Value;
 use std::collections::HashMap;
-
 use tokio::runtime::Runtime;
 
-mod utils {
-    include!("utils.rs");
-}
 mod data_manager {
     include!("data_manager.rs");
 }
@@ -126,7 +123,8 @@ impl App {
             };
             json_obj[&key] = new_value;
         }
-        let obj: T = serde_json::from_value(json_obj).map_err(|e| e.to_string())?;
+        let mut obj: T = serde_json::from_value(json_obj).map_err(|e| e.to_string())?;
+        obj.additional_setup();
         self.rt
             .block_on(self.db_manager.database_insert(&obj))
             .map_err(|_| "Failed to update on database".to_string())?;
@@ -167,8 +165,9 @@ impl App {
         let new_value = utils::user::get_input().trim().to_string();
         json_obj[field_name] = Value::String(new_value);
 
-        let updated_obj: T =
+        let mut updated_obj: T =
             serde_json::from_value(json_obj).map_err(|_| "Failed to update object")?;
+        updated_obj.additional_setup();
 
         self.rt
             .block_on(self.db_manager.database_update(&updated_obj))
