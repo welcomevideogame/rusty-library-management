@@ -52,7 +52,12 @@ pub mod structs {
             "Employee"
         }
         fn additional_setup(&mut self) {
-            self.password = utils::security::hash_str(self.password.as_str(), None);
+            let test = utils::loading::load_setting("Security", "hash_salt");
+            let a = test.unwrap();
+            if let Some(salt) = utils::loading::load_setting("Security", "hash_salt") {
+                self.password =
+                    utils::security::hash_str(self.password.as_str(), Some(salt.as_str()))
+            }
         }
     }
 
@@ -137,6 +142,8 @@ pub mod structs {
             if password.len() < 8 {
                 return Err("Password should be at least 8 characters long.");
             }
+            let salt_option = utils::loading::load_setting("Security", "hash_salt");
+            let salt_option = salt_option.as_deref();
             Ok(Employee {
                 id,
                 name,
@@ -146,7 +153,7 @@ pub mod structs {
                 subject,
                 alloc_budget,
                 perm_level,
-                password: utils::security::hash_str(password.as_str(), None),
+                password: utils::security::hash_str(password.as_str(), salt_option),
             })
         }
         pub fn department(&self) -> &str {
@@ -195,7 +202,9 @@ pub mod structs {
             self.perm_level = perm_level;
         }
         pub fn set_password(&mut self, password: String) {
-            self.password = utils::security::hash_str(password.as_str(), None);
+            let salt_option = utils::loading::load_setting("Security", "hash_salt");
+            let salt_option = salt_option.as_deref();
+            self.password = utils::security::hash_str(&password, salt_option);
         }
     }
 

@@ -7,15 +7,32 @@ pub mod loading {
 
     pub fn load_db_settings() -> Vec<String> {
         let settings: [&str; 3] = ["endpoint", "api_key", "salt"];
-        let mut res_settings: Vec<String> = Vec::new();
+        load_settings(&settings)
+    }
 
+    pub fn load_hashing_salt() -> Vec<String> {
+        let settings: [&str; 1] = ["hash_salt"];
+        load_settings(&settings)
+    }
+
+    fn load_config_contents() -> String {
         let mut contents = String::new();
-        BufReader::new(
-            File::open("./resources/config.ini").expect("There was a problem loading the file!"),
-        )
-        .read_to_string(&mut contents)
-        .expect("Failed to read the file");
+        BufReader::new(File::open("./resources/config.ini").expect("Config file does not exist"))
+            .read_to_string(&mut contents)
+            .expect("Config file is corrupt");
+        contents
+    }
 
+    pub fn load_setting(section: &str, setting: &str) -> Option<String> {
+        let contents = load_config_contents();
+        let mut config = configparser::ini::Ini::new();
+        config.read(contents).expect("Invalid config file!");
+        config.get(section, setting)
+    }
+
+    fn load_settings(settings: &[&str]) -> Vec<String> {
+        let mut res_settings = Vec::new();
+        let contents = load_config_contents();
         let mut config = configparser::ini::Ini::new();
         config.read(contents).expect("Invalid config file!");
 
@@ -77,6 +94,17 @@ mod tests {
         let test_string = "hello world";
         let hash_string = security::hash_str(test_string, None);
         assert_eq!(
+            "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9",
+            hash_string
+        )
+    }
+
+    #[test]
+    fn test_hashing_salt() {
+        let salt_string = "salt";
+        let test_string = "hello world";
+        let hash_string = security::hash_str(test_string, Some(salt_string));
+        assert_ne!(
             "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9",
             hash_string
         )
