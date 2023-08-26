@@ -10,11 +10,6 @@ pub mod loading {
         load_settings(&settings)
     }
 
-    pub fn load_hashing_salt() -> Vec<String> {
-        let settings: [&str; 1] = ["hash_salt"];
-        load_settings(&settings)
-    }
-
     fn load_config_contents() -> String {
         let mut contents = String::new();
         BufReader::new(File::open("./resources/config.ini").expect("Config file does not exist"))
@@ -67,18 +62,32 @@ pub mod user {
 }
 
 pub mod security {
-    use sha2::{Digest, Sha256};
-    use std::borrow::Cow;
+    use argon2::{self, Config, ThreadMode, Variant, Version};
+    use rand::RngCore;
 
-    pub fn hash_str(s: &str, salt: Option<&str>) -> String {
-        let mut hasher = Sha256::new();
-        let s: Cow<str> = match salt {
-            Some(chars) => format!("{}{}", chars, s).into(),
-            None => s.into(),
+    pub fn hash_str(s: &str) -> Result<String, argon2::Error> {
+        let config = Config {
+            variant: Variant::Argon2i,
+            version: Version::Version13,
+            mem_cost: 65536,
+            time_cost: 10,
+            lanes: 4,
+            thread_mode: ThreadMode::Parallel,
+            secret: &[],
+            ad: &[],
+            hash_length: 32,
         };
-        hasher.update(s.as_bytes());
-        let result = hasher.finalize();
-        format!("{:x}", result)
+
+        // Generate a new random salt
+        let mut salt = [0u8; 32];
+        rand::thread_rng().fill_bytes(&mut salt);
+
+        let hash = argon2::hash_encoded(s.as_bytes(), &salt, &config)?;
+        Ok(hash)
+    }
+
+    pub fn verify_password(hashed: &str, password: &str) -> Result<bool, argon2::Error> {
+        argon2::verify_encoded(hashed, password.as_bytes())
     }
 }
 
@@ -87,26 +96,29 @@ pub mod security {
 
 #[cfg(test)]
 mod tests {
-    use crate::utils::security;
+    use crate::utils::security::{hash_str, verify_password};
 
     #[test]
     fn test_hashing() {
         let test_string = "hello world";
-        let hash_string = security::hash_str(test_string, None);
-        assert_eq!(
-            "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9",
-            hash_string
-        )
+        match hash_str(test_string) {
+            Ok(hash) => {
+                assert!(verify_password(hash.as_str(), test_string).unwrap());
+            }
+            Err(_) => panic!("Hashing failed"),
+        }
     }
 
     #[test]
-    fn test_hashing_salt() {
-        let salt_string = "salt";
+    fn test_hashing_fail() {
         let test_string = "hello world";
-        let hash_string = security::hash_str(test_string, Some(salt_string));
-        assert_ne!(
-            "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9",
-            hash_string
-        )
+        match hash_str(test_string) {
+            Ok(hash) => {
+                assert!(
+                    !verify_password(hash.as_str(), &test_string[..test_string.len() - 1]).unwrap()
+                );
+            }
+            Err(_) => panic!("Hashing failed"),
+        }
     }
 }

@@ -1,5 +1,6 @@
 use super::utils;
 use crate::app::data_manager::manager::{DbTool, DbToolError};
+use crate::types::enums::PermissionLevel;
 use crate::types::structs::{DisplayInfo, Employee, Media};
 use serde_json::Value;
 use std::collections::HashMap;
@@ -12,6 +13,7 @@ mod data_manager {
 pub struct App {
     db_manager: DbTool,
     employees: HashMap<u16, Employee>,
+    user: u16,
     media: HashMap<u16, Media>,
     rt: Runtime,
 }
@@ -30,6 +32,7 @@ impl App {
         App {
             db_manager,
             employees,
+            user: 0,
             media,
             rt,
         }
@@ -38,35 +41,144 @@ impl App {
     pub fn run(&mut self) {
         self.update_data();
         println!("Welcome to the library management system");
+        self.request_login();
+        self.main_loop();
+    }
+
+    fn update_data(&mut self) {
+        self.employees =
+            utils::loading::vec_to_hashmap(self.rt.block_on(self.db_manager.get_table()));
+        self.media = utils::loading::vec_to_hashmap(self.rt.block_on(self.db_manager.get_table()));
+    }
+
+    fn request_login(&mut self) {
         loop {
-            println!(
-                "Enter an option:\n\
-            \t1: View Employees\n\
-            \t2: View Media\n\
-            \t3: Create Employee\n\
-            \t4: Create Media"
-            );
-            let response = utils::user::get_input();
-            match response.as_str() {
-                "1" => _ = self.item_selection::<Employee>(&self.employees),
-                "2" => _ = self.item_selection::<Media>(&self.media),
-                "3" => match self.create_obj::<Employee>() {
-                    Ok(_) => println!("Successfully created the employee!"),
-                    Err(e) => println!("Failed to create the employee -> {}", e),
-                },
-                "4" => match self.create_obj::<Media>() {
-                    Ok(_) => println!("Successfully created the media object!"),
-                    Err(e) => println!("Failed to create the media object -> {}", e),
-                },
-                _ => (),
+            let employee_id = self.prompt_for_employee_id();
+            if employee_id == 0 {
+                return;
+            }
+            if let Some(employee) = self.employees.get(&employee_id) {
+                if self.authenticate_employee(employee, employee_id) {
+                    self.user = employee_id;
+                    println!("Welcome, {}", employee.get_name());
+                    return;
+                }
+            } else {
+                println!("Employee ID of {} not found", employee_id);
             }
         }
     }
 
-    pub fn update_data(&mut self) {
-        self.employees =
-            utils::loading::vec_to_hashmap(self.rt.block_on(self.db_manager.get_table()));
-        self.media = utils::loading::vec_to_hashmap(self.rt.block_on(self.db_manager.get_table()));
+    fn prompt_for_employee_id(&self) -> u16 {
+        loop {
+            println!("Please enter your employee number. (0 to be guest)");
+            let response = utils::user::get_input();
+            match response.parse::<u16>() {
+                Ok(value) => return value,
+                Err(_) => println!("Invalid employee ID"),
+            }
+        }
+    }
+
+    fn authenticate_employee(&self, employee: &Employee, employee_id: u16) -> bool {
+        loop {
+            println!(
+                "Employee ID {}. Enter password or 'exit' to exit",
+                employee_id
+            );
+            let response = utils::user::get_input();
+            if response.as_str().to_lowercase() == "exit" {
+                return false;
+            }
+            match utils::security::verify_password(employee.password(), response.as_str()) {
+                Ok(matches) => {
+                    if matches {
+                        return true;
+                    } else {
+                        println!("Incorrect password");
+                    }
+                }
+                Err(_) => println!("Error checking password"),
+            }
+        }
+    }
+
+    // TODO - Make this more concise
+    fn main_loop(&self) {
+        let mut feature_permissions = HashMap::new();
+        feature_permissions.insert("View Employees", PermissionLevel::User);
+        feature_permissions.insert("View Media", PermissionLevel::Basic);
+        feature_permissions.insert("Create Employee", PermissionLevel::Manager);
+        feature_permissions.insert("Create Media", PermissionLevel::Admin);
+
+        loop {
+            println!(
+                "Enter an option:\n\
+                \t1: View Employees\n\
+                \t2: View Media\n\
+                \t3: Create Employee\n\
+                \t4: Create Media"
+            );
+
+            let response = utils::user::get_input();
+            let user_permission_level = self.employees.get(&self.user).unwrap().perm_level();
+
+            match response.as_str() {
+                "1" => {
+                    if user_permission_level
+                        >= feature_permissions
+                            .get("View Employees")
+                            .unwrap_or(&PermissionLevel::None)
+                    {
+                        _ = self.item_selection::<Employee>(&self.employees);
+                    } else {
+                        println!("Insufficient permission level.");
+                    }
+                }
+                "2" => {
+                    if user_permission_level
+                        >= feature_permissions
+                            .get("View Media")
+                            .unwrap_or(&PermissionLevel::None)
+                    {
+                        _ = self.item_selection::<Media>(&self.media);
+                    } else {
+                        println!("Insufficient permission level.");
+                    }
+                }
+                "3" => {
+                    if user_permission_level
+                        >= feature_permissions
+                            .get("Create Employee")
+                            .unwrap_or(&PermissionLevel::None)
+                    {
+                        match self.create_obj::<Employee>() {
+                            Ok(_) => println!("Successfully created the employee!"),
+                            Err(e) => println!("Failed to create the employee -> {}", e),
+                        }
+                    } else {
+                        println!("Insufficient permission level.");
+                    }
+                }
+                "4" => {
+                    if user_permission_level
+                        >= feature_permissions
+                            .get("Create Media")
+                            .unwrap_or(&PermissionLevel::None)
+                    {
+                        match self.create_obj::<Media>() {
+                            Ok(_) => println!("Successfully created the media object!"),
+                            Err(e) => println!("Failed to create the media object -> {}", e),
+                        }
+                    } else {
+                        println!("Insufficient permission level.");
+                    }
+                }
+                _ => {
+                    println!("Invalid option.");
+                }
+            }
+        }
     }
 
     fn item_selection<T: DisplayInfo + ToString>(&self, items: &HashMap<u16, T>) -> Option<()> {

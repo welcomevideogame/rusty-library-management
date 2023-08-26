@@ -1,7 +1,7 @@
 pub mod structs {
 
     use super::super::utils;
-    use crate::types::enums::MediaType;
+    use crate::types::enums::{MediaType, PermissionLevel};
     use serde::{Deserialize, Serialize};
     use std::fmt;
 
@@ -17,7 +17,7 @@ pub mod structs {
         project: String,
         subject: String,
         alloc_budget: u16,
-        perm_level: u16,
+        perm_level: PermissionLevel,
         password: String,
     }
 
@@ -52,11 +52,9 @@ pub mod structs {
             "Employee"
         }
         fn additional_setup(&mut self) {
-            let test = utils::loading::load_setting("Security", "hash_salt");
-            let a = test.unwrap();
-            if let Some(salt) = utils::loading::load_setting("Security", "hash_salt") {
-                self.password =
-                    utils::security::hash_str(self.password.as_str(), Some(salt.as_str()))
+            match utils::security::hash_str(self.password.as_str()) {
+                Ok(hash) => self.password = hash,
+                Err(e) => eprintln!("{}", e),
             }
         }
     }
@@ -136,25 +134,26 @@ pub mod structs {
             project: String,
             subject: String,
             alloc_budget: u16,
-            perm_level: u16,
+            perm_level: PermissionLevel,
             password: String,
         ) -> Result<Self, &'static str> {
             if password.len() < 8 {
                 return Err("Password should be at least 8 characters long.");
             }
-            let salt_option = utils::loading::load_setting("Security", "hash_salt");
-            let salt_option = salt_option.as_deref();
-            Ok(Employee {
-                id,
-                name,
-                department,
-                boss_id,
-                project,
-                subject,
-                alloc_budget,
-                perm_level,
-                password: utils::security::hash_str(password.as_str(), salt_option),
-            })
+            match utils::security::hash_str(password.as_str()) {
+                Ok(hash) => Ok(Employee {
+                    id,
+                    name,
+                    department,
+                    boss_id,
+                    project,
+                    subject,
+                    alloc_budget,
+                    perm_level,
+                    password: hash,
+                }),
+                Err(_) => Err("Error occurred while hashing password"),
+            }
         }
         pub fn department(&self) -> &str {
             &self.department
@@ -171,8 +170,8 @@ pub mod structs {
         pub fn alloc_budget(&self) -> u16 {
             self.alloc_budget
         }
-        pub fn perm_level(&self) -> u16 {
-            self.perm_level
+        pub fn perm_level(&self) -> &PermissionLevel {
+            &self.perm_level
         }
         pub fn password(&self) -> &str {
             &self.password
@@ -198,13 +197,14 @@ pub mod structs {
         pub fn set_alloc_budget(&mut self, alloc_budget: u16) {
             self.alloc_budget = alloc_budget;
         }
-        pub fn set_perm_level(&mut self, perm_level: u16) {
+        pub fn set_perm_level(&mut self, perm_level: PermissionLevel) {
             self.perm_level = perm_level;
         }
         pub fn set_password(&mut self, password: String) {
-            let salt_option = utils::loading::load_setting("Security", "hash_salt");
-            let salt_option = salt_option.as_deref();
-            self.password = utils::security::hash_str(&password, salt_option);
+            match utils::security::hash_str(password.as_str()) {
+                Ok(hash) => self.password = hash,
+                Err(e) => eprintln!("{}", e),
+            }
         }
     }
 
@@ -260,7 +260,19 @@ pub mod structs {
 }
 
 pub mod enums {
+    use std::cmp::Ordering;
     use std::fmt;
+
+    #[derive(serde::Deserialize, serde::Serialize, Debug, Default)]
+    pub enum PermissionLevel {
+        Basic,
+        User,
+        Manager,
+        Admin,
+        Dev,
+        #[default]
+        None,
+    }
 
     #[derive(serde::Deserialize, serde::Serialize, Debug, Default)]
     pub enum MediaType {
@@ -270,6 +282,44 @@ pub mod enums {
         Music,
         #[default]
         None,
+    }
+
+    impl PartialEq for PermissionLevel {
+        fn eq(&self, other: &Self) -> bool {
+            self.to_ordinal() == other.to_ordinal()
+        }
+    }
+
+    impl PartialOrd for PermissionLevel {
+        fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+            Some(self.to_ordinal().cmp(&other.to_ordinal()))
+        }
+    }
+
+    impl PermissionLevel {
+        fn to_ordinal(&self) -> u8 {
+            match self {
+                PermissionLevel::None => 0,
+                PermissionLevel::Basic => 1,
+                PermissionLevel::User => 2,
+                PermissionLevel::Manager => 3,
+                PermissionLevel::Admin => 4,
+                PermissionLevel::Dev => 5,
+            }
+        }
+    }
+
+    impl fmt::Display for PermissionLevel {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            match self {
+                PermissionLevel::Basic => write!(f, "Basic"),
+                PermissionLevel::User => write!(f, "User"),
+                PermissionLevel::Manager => write!(f, "Manager"),
+                PermissionLevel::Admin => write!(f, "Admin"),
+                PermissionLevel::Dev => write!(f, "Dev"),
+                PermissionLevel::None => write!(f, "None"),
+            }
+        }
     }
 
     impl fmt::Display for MediaType {
@@ -291,6 +341,7 @@ pub mod enums {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::types::enums::PermissionLevel;
 
     #[test]
     fn create_employee() {
@@ -302,7 +353,7 @@ mod tests {
             String::from("Ambitious Project"),
             String::from("Computer Science"),
             1_000,
-            1,
+            PermissionLevel::Manager,
             String::from("password"),
         );
         assert!(test_employee.is_ok())
@@ -318,7 +369,7 @@ mod tests {
             String::from("Ambitious Project"),
             String::from("Computer Science"),
             1_000,
-            1,
+            PermissionLevel::Manager,
             String::from("pass"),
         );
         assert!(test_employee.is_err())
