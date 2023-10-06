@@ -4,6 +4,7 @@ pub mod loading {
     use std::fs::File;
     use std::io::prelude::*;
     use std::io::BufReader;
+    use super::super::types::structs::Trie;
 
     pub fn load_db_settings() -> Vec<String> {
         let settings: [&str; 3] = ["endpoint", "api_key", "salt"];
@@ -39,6 +40,14 @@ pub mod loading {
 
     pub fn vec_to_hashmap<T: DisplayInfo>(obj_vec: Vec<T>) -> HashMap<u16, T> {
         obj_vec.into_iter().map(|obj| (obj.get_id(), obj)).collect()
+    }
+
+    pub fn hashmap_to_trie<T: DisplayInfo>(obj_map: &HashMap<u16, T>) -> Trie {
+        let mut trie = Trie::new();
+        for (_, obj) in obj_map {
+            trie.insert(obj.get_name().to_lowercase().to_string());
+        }
+        trie
     }
 }
 

@@ -161,7 +161,7 @@ pub mod manager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::enums::MediaType;
+    use crate::types::enums::{PermissionLevel, MediaType};
     use crate::types::structs::{Employee, Media};
 
     fn create_test_employee() -> Employee {
@@ -173,7 +173,7 @@ mod tests {
             String::from("Ambitious Project"),
             String::from("Computer Science"),
             1_000,
-            1,
+            PermissionLevel::Admin,
             String::from("password"),
         )
         .unwrap()

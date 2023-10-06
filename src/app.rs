@@ -1,7 +1,7 @@
 use super::utils;
 use crate::app::data_manager::manager::{DbTool, DbToolError};
 use crate::types::enums::PermissionLevel;
-use crate::types::structs::{DisplayInfo, Employee, Media};
+use crate::types::structs::{DisplayInfo, Employee, Media, Trie};
 use serde_json::Value;
 use std::collections::HashMap;
 use tokio::runtime::Runtime;
@@ -15,6 +15,7 @@ pub struct App {
     employees: HashMap<u16, Employee>,
     user: u16,
     media: HashMap<u16, Media>,
+    trie: HashMap<&'static str, Trie>,
     rt: Runtime,
 }
 
@@ -29,11 +30,13 @@ impl App {
         println!("Connected to the database");
         let employees: HashMap<u16, Employee> = HashMap::new();
         let media: HashMap<u16, Media> = HashMap::new();
+        let mut trie: HashMap<&'static str, Trie> = HashMap::new();
         App {
             db_manager,
             employees,
             user: 0,
             media,
+            trie,
             rt,
         }
     }
@@ -46,9 +49,11 @@ impl App {
     }
 
     fn update_data(&mut self) {
-        self.employees =
-            utils::loading::vec_to_hashmap(self.rt.block_on(self.db_manager.get_table()));
+        self.employees = utils::loading::vec_to_hashmap(self.rt.block_on(self.db_manager.get_table()));
         self.media = utils::loading::vec_to_hashmap(self.rt.block_on(self.db_manager.get_table()));
+
+        self.trie.insert(Employee::get_table_name(), utils::loading::hashmap_to_trie(&self.employees));
+        self.trie.insert(Media::get_table_name(), utils::loading::hashmap_to_trie(&self.media));
     }
 
     fn request_login(&mut self) {
@@ -121,7 +126,10 @@ impl App {
             );
 
             let response = utils::user::get_input();
-            let user_permission_level = self.employees.get(&self.user).unwrap().perm_level();
+            
+            let user_permission_level: &PermissionLevel = self.employees
+                .get(&self.user)
+                .map_or(&PermissionLevel::Basic, |e| e.perm_level());
 
             match response.as_str() {
                 "1" => {
@@ -182,13 +190,22 @@ impl App {
     }
 
     fn item_selection<T: DisplayInfo + ToString>(&self, items: &HashMap<u16, T>) -> Option<()> {
+        println!("Choose an option:\
+            \n1: Show all names\
+            \n2: Search for item");
+            let response = utils::user::get_input().parse::<u8>().ok()?;
+            let _obj = match response {
+                1 => self.list_items::<T>(items)?,
+                2 => self.search_items::<T>(items)?,
+                _ => return None,
+            };
         let obj = self.list_items::<T>(items)?;
         println!(
             "Choose an option for {}\
             \n1: Show Details\
-            \n2: Change Information\
-            \n3: Delete\
-            \n4: Exit",
+            \n3: Change Information\
+            \n4: Delete\
+            \n5: Exit",
             obj.get_name()
         );
 
@@ -256,6 +273,22 @@ impl App {
             Err(_) => return None,
         };
         items.get(&response)
+    }
+
+    fn search_items<'a, T: DisplayInfo + ToString>(
+        &self,
+        _items: &'a HashMap<u16, T>
+    ) -> Option<&'a T> {
+        println!("Enter the name of the item you want to search");
+        let name = utils::user::get_input();
+        let name_vec: &Trie = self.trie.get(T::get_table_name())?;
+
+        let names = name_vec.starts_with(name)?;
+        println!("found some");
+        for name in names{
+            println!("{}", name);
+        }
+        None
     }
 
     fn update_item<T: DisplayInfo>(&self, obj: &T) -> Result<(), &str> {

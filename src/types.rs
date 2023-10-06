@@ -4,6 +4,7 @@ pub mod structs {
     use crate::types::enums::{MediaType, PermissionLevel};
     use serde::{Deserialize, Serialize};
     use std::fmt;
+    use std::collections::HashMap;
 
     // Struct Definitions
     // ---------------------------------------------------------------
@@ -257,6 +258,92 @@ pub mod structs {
             self.renter = renter;
         }
     }
+
+
+    #[derive(Default)]
+    struct TreeNode {
+        word: bool,
+        children: HashMap<char, TreeNode>,
+    }
+    
+    impl TreeNode {
+        pub fn new() -> Self {
+            TreeNode {
+                word: false,
+                children: HashMap::new(),
+            }
+        }
+    }
+    
+    pub struct Trie {
+        root: TreeNode,
+    }
+    
+    impl Trie {
+        pub fn new() -> Self {
+            Trie { root: TreeNode::new() }
+        }
+    
+        pub fn insert(&mut self, word: String) {
+            let mut cur = &mut self.root;
+            for c in word.chars() {
+                cur = cur.children.entry(c).or_insert(TreeNode::new());
+            }
+            cur.word = true;
+        }
+    
+        pub fn search(&self, word: String) -> Option<Vec<String>> {
+            let mut result = Vec::new();
+            if let Some(node) = self.traverse(&word) {
+                if node.word {
+                    result.push(word.clone());
+                }
+                let mut current_word = word.clone();
+                self.collect_words(node, &mut current_word, &mut result);
+                Some(result)
+            } else {
+                None
+            }
+        }
+    
+        pub fn starts_with(&self, prefix: String) -> Option<Vec<String>> {
+            let mut result = Vec::new();
+            if let Some(node) = self.traverse(&prefix) {
+                let mut current_word = prefix.clone();
+                self.collect_words(node, &mut current_word, &mut result);
+                Some(result)
+            } else {
+                None
+            }
+        }
+    
+        fn traverse(&self, prefix: &String) -> Option<&TreeNode> {
+            let mut cur = &self.root;
+            for c in prefix.chars() {
+                match cur.children.get(&c) {
+                    Some(child) => {
+                        cur = child;
+                    }
+                    None => {
+                        return None;
+                    }
+                }
+            }
+            Some(cur)
+        }
+    
+        fn collect_words(&self, node: &TreeNode, current_word: &mut String, result: &mut Vec<String>) {
+            if node.word {
+                result.push(current_word.clone());
+            }
+            for (char, child_node) in &node.children {
+                current_word.push(*char);
+                self.collect_words(child_node, current_word, result);
+                current_word.pop();
+            }
+        }
+    }
+    
 }
 
 pub mod enums {
@@ -342,6 +429,7 @@ pub mod enums {
 mod tests {
     use super::*;
     use crate::types::enums::PermissionLevel;
+    use crate::types::structs::Trie;
 
     #[test]
     fn create_employee() {
@@ -373,5 +461,23 @@ mod tests {
             String::from("pass"),
         );
         assert!(test_employee.is_err())
+    }
+
+    #[test]
+    fn test_starts_with() {
+        let mut trie = Trie::new();
+        trie.insert("hello".to_string());
+        trie.insert("world".to_string());
+
+        assert_eq!(trie.starts_with("he".to_string()), Some(vec!["hello".to_string()]));
+        assert_eq!(trie.starts_with("wo".to_string()), Some(vec!["world".to_string()]));
+        assert_eq!(trie.starts_with("foo".to_string()), None);
+    }
+
+    #[test]
+    fn test_empty_trie() {
+        let trie = Trie::new();
+        assert_eq!(trie.search("hello".to_string()), None);
+        assert_eq!(trie.starts_with("he".to_string()), None);
     }
 }
