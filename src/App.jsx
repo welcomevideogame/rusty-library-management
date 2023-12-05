@@ -1,51 +1,82 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
+import { useState, useEffect } from "react";
+import logo from "./assets/library.svg";
 import { invoke } from "@tauri-apps/api/tauri";
 import "./App.css";
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [databaseManager, setDatabaseManager] = useState(null);
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
-    setGreetMsg(await invoke("greet", { name }));
+  useEffect(() => {
+    const initializeDatabaseManager = async () => {
+      const manager = await invoke("create_db_manager");
+      setDatabaseManager(manager);
+    };
+
+    initializeDatabaseManager();
+  }, []);
+
+  async function logIn2() {
+    if (databaseManager) {
+      const loginSuccess = await invoke("log_in", { username, password, manager: databaseManager });
+      setIsLoggedIn(loginSuccess);
+    }
+  }
+
+  async function logIn(){
+    const loginSuccess = await invoke("test", { })
+    setIsLoggedIn(loginSuccess);
+  }
+
+  // Placeholder functions for demonstration
+  async function functionOne() {
+    console.log("Function One called");
+    // Implement your logic here
   }
 
   return (
     <div className="container">
-      <h1>Welcome to Tauri!</h1>
+      <h2>Library Management System</h2>
 
-      <div className="row">
-        <a href="https://vitejs.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://reactjs.org" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
+      {!isLoggedIn ? (
+        <>
+          <div className="row">
+            <a href="https://google.com" target="_blank">
+              <img src={logo} className="logo react" alt="logo logo" />
+            </a>
+          </div>
 
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
+          <p>Please log in</p>
 
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-
-      <p>{greetMsg}</p>
+          <form className="row" onSubmit={(e) => {
+              e.preventDefault();
+              logIn();
+          }}>
+              <div>
+                  <input
+                      id="username-input"
+                      onChange={(e) => setUsername(e.currentTarget.value)}
+                      placeholder="Username"
+                  />
+              </div>
+              <div>
+                  <input
+                      id="password-input"
+                      onChange={(e) => setPassword(e.currentTarget.value)}
+                      placeholder="Password"
+                  />
+              </div>
+              <button type="submit">Log In</button>
+          </form>
+        </>
+      ) : (
+        <div>
+          <h3>Logged in: {username}!</h3>
+          <button onClick={functionOne}>Button 1</button>
+        </div>
+      )}
     </div>
   );
 }
