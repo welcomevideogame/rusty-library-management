@@ -7,34 +7,30 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [databaseManager, setDatabaseManager] = useState(null);
-
-  useEffect(() => {
-    const initializeDatabaseManager = async () => {
-      const manager = await invoke("create_db_manager");
-      setDatabaseManager(manager);
-    };
-
-    initializeDatabaseManager();
-  }, []);
-
-  async function logIn2() {
-    if (databaseManager) {
-      const loginSuccess = await invoke("log_in", { username, password, manager: databaseManager });
-      setIsLoggedIn(loginSuccess);
-    }
-  }
 
   async function logIn(){
-    const loginSuccess = await invoke("test", { })
-    setIsLoggedIn(loginSuccess);
+    await invoke('authenticate', {id: parseInt(username), password: password})
+      .then((res) =>
+        setIsLoggedIn(res)
+      )
+      .catch((e) => console.error(e))
   }
 
-  // Placeholder functions for demonstration
-  async function functionOne() {
-    console.log("Function One called");
-    // Implement your logic here
-  }
+  const handleUsernameChange = (e) => {
+    const value = e.currentTarget.value;
+    if (/^[1-9]\d*$/.test(value)) {
+      setUsername(value);
+    } else if (value === '') {
+      setUsername('');
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log(username, password)
+    logIn();
+  };
+
 
   return (
     <div className="container">
@@ -50,14 +46,12 @@ function App() {
 
           <p>Please log in</p>
 
-          <form className="row" onSubmit={(e) => {
-              e.preventDefault();
-              logIn();
-          }}>
+          <form className="row" onSubmit={handleSubmit}>
               <div>
                   <input
                       id="username-input"
-                      onChange={(e) => setUsername(e.currentTarget.value)}
+                      onChange={handleUsernameChange}
+                      value={username}
                       placeholder="Username"
                   />
               </div>
@@ -66,6 +60,7 @@ function App() {
                       id="password-input"
                       onChange={(e) => setPassword(e.currentTarget.value)}
                       placeholder="Password"
+                      type="password"
                   />
               </div>
               <button type="submit">Log In</button>
