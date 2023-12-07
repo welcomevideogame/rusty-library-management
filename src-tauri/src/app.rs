@@ -45,14 +45,23 @@ impl App {
         self.update_data();
     }
 
-    pub fn authenticate_employee(&self, employee_id: u16, password: &str) -> bool{
-        self.employees.get(&employee_id).map_or(false, |emp| {
-            match utils::security::verify_password(emp.password(), password){
-                Ok(res) => res,
-                Err(_) => false,
+    pub fn authenticate_employee(&mut self, employee_id: u16, password: &str) -> bool {
+        if let Some(emp) = self.employees.get(&employee_id) {
+            if utils::security::verify_password(emp.password(), password).is_ok() {
+                self.user = emp.get_id();
+                return true
+            } else {
+                return false
             }
-            
-        })
+        }
+        false
+    }
+
+    pub fn get_permission_level(&self, ) -> &PermissionLevel {
+        if let Some(emp) = self.employees.get(&self.user) {
+            return emp.perm_level()
+        }
+        &PermissionLevel::Basic
     }
 
 
@@ -160,7 +169,8 @@ impl App {
         Ok(())
     }
 
-    pub fn media(&self) -> &HashMap<u16, Media> {
+    pub fn get_media(&self) -> &HashMap<u16, Media> {
         &self.media
     }
+
 }

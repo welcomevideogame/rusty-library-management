@@ -65,15 +65,15 @@ pub mod structs {
             write!(
                 f,
                 "Employee Information:\n\
-                 ID: {}\n\
-                 Name: {}\n\
-                 Department: {}\n\
-                 Boss ID: {}\n\
-                 Project: {}\n\
-                 Subject: {}\n\
-                 Allocated Budget: {}\n\
-                 Permission Level: {}\n\
-                 Password: {}",
+                ID: {}\n\
+                Name: {}\n\
+                Department: {}\n\
+                Boss ID: {}\n\
+                Project: {}\n\
+                Subject: {}\n\
+                Allocated Budget: {}\n\
+                Permission Level: {}\n\
+                Password: {}",
                 self.id,
                 self.name,
                 self.department,
@@ -107,12 +107,12 @@ pub mod structs {
             write!(
                 f,
                 "Media Information:\n\
-                 ID: {}\n\
-                 Media Type: {}\n\
-                 Name: {}\n\
-                 Borrowable: {}\n\
-                 Vendor: {}\n\
-                 Renter: {}",
+                ID: {}\n\
+                Media Type: {}\n\
+                Name: {}\n\
+                Borrowable: {}\n\
+                Vendor: {}\n\
+                Renter: {}",
                 self.id,
                 self.media_type,
                 self.name,

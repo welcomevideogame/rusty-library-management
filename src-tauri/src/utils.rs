@@ -19,13 +19,6 @@ pub mod loading {
         contents
     }
 
-    pub fn load_setting(section: &str, setting: &str) -> Option<String> {
-        let contents = load_config_contents();
-        let mut config = configparser::ini::Ini::new();
-        config.read(contents).expect("Invalid config file!");
-        config.get(section, setting)
-    }
-
     fn load_settings(settings: &[&str]) -> Vec<String> {
         let mut res_settings = Vec::new();
         let contents = load_config_contents();
@@ -40,6 +33,10 @@ pub mod loading {
 
     pub fn vec_to_hashmap<T: DisplayInfo>(obj_vec: Vec<T>) -> HashMap<u16, T> {
         obj_vec.into_iter().map(|obj| (obj.get_id(), obj)).collect()
+    }
+
+    pub fn hashmap_to_vec<T: Clone>(map: &HashMap<u16, T>) -> Vec<T> {
+        map.values().cloned().collect()
     }
 
     pub fn hashmap_to_trie<T: DisplayInfo>(obj_map: &HashMap<u16, T>) -> Trie {

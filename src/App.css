@@ -17,6 +17,10 @@
   font-weight: bold;
 }
 
+.toolbar-button.permission {
+  color:#61dafb
+}
+
 .p-datatable .p-datatable-thead > tr > th {
   border: 1px solid #dee2e6;
 }
