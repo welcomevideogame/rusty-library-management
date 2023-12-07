@@ -22,7 +22,7 @@ pub mod structs {
         password: String,
     }
 
-    #[derive(serde::Deserialize, serde::Serialize, Debug, Default)]
+    #[derive(serde::Deserialize, serde::Serialize, Debug, Default, Clone)]
     pub struct Media {
         id: u16,
         media_type: MediaType,
@@ -361,7 +361,7 @@ pub mod enums {
         None,
     }
 
-    #[derive(serde::Deserialize, serde::Serialize, Debug, Default)]
+    #[derive(serde::Deserialize, serde::Serialize, Debug, Default, Clone)]
     pub enum MediaType {
         Book,
         VideoGame,

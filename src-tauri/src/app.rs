@@ -59,7 +59,6 @@ impl App {
     fn update_data(&mut self) {
         self.employees = utils::loading::vec_to_hashmap(self.rt.block_on(self.db_manager.get_table()));
         self.media = utils::loading::vec_to_hashmap(self.rt.block_on(self.db_manager.get_table()));
-
         self.trie.insert(Employee::get_table_name(), utils::loading::hashmap_to_trie(&self.employees));
         self.trie.insert(Media::get_table_name(), utils::loading::hashmap_to_trie(&self.media));
     }
@@ -159,5 +158,9 @@ impl App {
     fn delete_item<T: DisplayInfo>(&self, item: &T) -> Result<(), DbToolError> {
         self.rt.block_on(self.db_manager.database_delete(item))?;
         Ok(())
+    }
+
+    pub fn media(&self) -> &HashMap<u16, Media> {
+        &self.media
     }
 }

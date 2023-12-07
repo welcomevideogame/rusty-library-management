@@ -5,3 +5,26 @@
 .logo.react:hover {
   filter: drop-shadow(0 0 2em #61dafb);
 }
+
+.toolbar-button {
+  margin: 0 10px;
+  color: gray;
+}
+
+.toolbar-button.selected {
+  color: green;
+  font-style: italic;
+  font-weight: bold;
+}
+
+.p-datatable .p-datatable-thead > tr > th {
+  border: 1px solid #dee2e6;
+}
+
+.p-datatable .p-datatable-tbody > tr > td {
+  border: 1px solid #dee2e6;
+}
+
+.p-datatable {
+  border-collapse: collapse;
+}

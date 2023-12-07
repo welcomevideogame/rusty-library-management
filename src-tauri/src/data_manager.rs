@@ -62,7 +62,7 @@ pub mod manager {
             match resp.text().await {
                 Ok(s) => match serde_json::from_str(&s) {
                     Ok(vec_t) => vec_t,
-                    Err(err) => panic!("Error parsing data -> {}", err),
+                    Err(err) => panic!("Error parsing data -> {}, most likely an invalid API url", err),
                 },
                 Err(_) => panic!("Invalid table settings. Unable to get data."),
             }
