@@ -26,6 +26,7 @@ async fn get_media(tool: State<'_, Mutex<app::App>>) -> Result<String, String> {
     serde_json::to_string(&new_media).map_err(|_| "Failed to serialize media data".into())
 }
 
+
 #[tauri::command]
 async fn get_rank(tool: State<'_, Mutex<app::App>>) -> Result<String, String> {
     let app = tool.lock().map_err(|_| "Failed to acquire lock")?;
