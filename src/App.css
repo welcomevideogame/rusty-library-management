@@ -23,10 +23,12 @@
 
 .p-datatable .p-datatable-thead > tr > th {
   border: 1px solid #dee2e6;
+  border-color: cornsilk;
 }
 
 .p-datatable .p-datatable-tbody > tr > td {
   border: 1px solid #dee2e6;
+  border-color: cornsilk;
 }
 
 .p-datatable {

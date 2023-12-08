@@ -57,11 +57,8 @@ impl App {
         false
     }
 
-    pub fn get_permission_level(&self, ) -> &PermissionLevel {
-        if let Some(emp) = self.employees.get(&self.user) {
-            return emp.perm_level()
-        }
-        &PermissionLevel::Basic
+    pub fn get_permission_level(&self) -> Option<&PermissionLevel> {
+        self.employees.get(&self.user).map(|emp| emp.perm_level())
     }
 
 

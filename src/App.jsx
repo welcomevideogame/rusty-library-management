@@ -12,14 +12,21 @@ function App() {
   const [password, setPassword] = useState("");
   
   const [activeFrame, setActiveFrame] = useState(null);
-
   const [mediaData, setMediaData] = useState([]);
+  const [rank, setRank] = useState("");
+
+  const [buttonVisibility, setButtonVisibility] = useState({
+    mediaButton: false,
+    employeesButton: false,
+    settingsButton: false
+  });
 
   async function logIn(){
     await invoke('authenticate', {id: parseInt(username), password: password})
-      .then((res) =>
-        setIsLoggedIn(res)
-      )
+      .then((res) => {
+        setIsLoggedIn(res);
+        if (res) handleRankDisplay();
+      })
       .catch((e) => console.error(e))
   }
 
@@ -38,12 +45,11 @@ function App() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log(username, password)
     logIn();
   };
 
   useEffect(() => {
-    if (isLoggedIn && activeFrame === 'frame1') {
+    if (isLoggedIn && activeFrame === 'media') {
       invoke('get_media')
         .then((json) => {
           const data = JSON.parse(json);
@@ -53,6 +59,36 @@ function App() {
     }
   }, [isLoggedIn, activeFrame]);
 
+  useEffect(() => {
+    if (isLoggedIn) {
+      invoke('get_rank')
+        .then((rank) => {
+          setRank(rank);
+          handleRankDisplay(rank); // Update to pass rank
+        })
+        .catch((error) => console.error('Error fetching rank data:', error));
+    }
+  }, [isLoggedIn]);
+
+  const handleRankDisplay = (rank) => {
+    switch(rank){
+      case 'Basic':
+      case 'User':
+        setButtonVisibility({ mediaButton: true, employeesButton: false, settingsButton: false });
+        break;
+      case 'Manager':
+        setButtonVisibility({ mediaButton: true, employeesButton: true, settingsButton: false });
+        break;
+      case 'Admin':
+      case 'Dev':
+        setButtonVisibility({ mediaButton: true, employeesButton: true, settingsButton: true });
+        break;
+      case 'None':
+      default:
+        setButtonVisibility({ mediaButton: false, employeesButton: false, settingsButton: false });
+        break;
+    }
+  }
 
   return (
     <div className="container">
@@ -65,9 +101,7 @@ function App() {
               <img src={logo} className="logo react" alt="logo logo" />
             </a>
           </div>
-
           <p>Please log in</p>
-
           <form className="row" onSubmit={handleSubmit}>
               <div>
                   <input
@@ -90,43 +124,50 @@ function App() {
         </>
       ) : (
         <>
-        <div className="button-toolbar">
-          <div className="button-group">
-            <button
-              className={`toolbar-button ${activeFrame === 'frame1' ? 'selected' : ''}`}
-              onClick={() => handleFrameChange('frame1')}
-            >
-              Frame 1
-            </button>
-            <button
-              className={`toolbar-button ${activeFrame === 'frame2' ? 'selected' : ''}`}
-              onClick={() => handleFrameChange('frame2')}
-            >
-              Frame 2
-            </button>
-            <button
-              className={`toolbar-button ${activeFrame === 'frame3' ? 'selected' : ''}`}
-              onClick={() => handleFrameChange('frame3')}
-            >
-              Frame 3
-            </button>
+          <div className="button-toolbar">
+            <div className="button-group">
+              {buttonVisibility.mediaButton && 
+                <button
+                  className={`toolbar-button ${activeFrame === 'media' ? 'selected' : ''}`}
+                  onClick={() => handleFrameChange('media')}
+                >
+                  Media
+                </button>
+              }
+              {buttonVisibility.employeesButton && 
+                <button
+                  className={`toolbar-button ${activeFrame === 'frame2' ? 'selected' : ''}`}
+                  onClick={() => handleFrameChange('frame2')}
+                >
+                  Employees
+                </button>
+              }
+              {buttonVisibility.settingsButton && 
+                <button
+                  className={`toolbar-button ${activeFrame === 'frame3' ? 'selected' : ''}`}
+                  onClick={() => handleFrameChange('frame3')}
+                >
+                  Settings
+                </button>
+              }
+            </div>
           </div>
-        </div>
-          
-          {activeFrame === 'frame1' && 
-          <div>
-            <br></br>
-            <DataTable value={mediaData} tableStyle={{ minWidth: '40rem' }}>
-              <Column field="id" header="ID" />
-              <Column field="media_type" header="Type" />
-              <Column field="name" header="Title" />
-              <Column field="borrowable" header="Available" />
-              <Column field="vendor" header="Vendor" />
-              <Column field="renter" header="Renter" />
-            </DataTable>
-          </div>}
+
+          {activeFrame === 'media' && 
+            <div>
+              <br></br>
+              <DataTable value={mediaData} tableStyle={{ minWidth: '40rem' }}>
+                <Column field="id" header="ID" />
+                <Column field="media_type" header="Type" />
+                <Column field="name" header="Title" />
+                <Column field="borrowable" header="Available" />
+                <Column field="vendor" header="Vendor" />
+                <Column field="renter" header="Renter" />
+              </DataTable>
+            </div>
+          }
           {activeFrame === 'frame2' && <div>Content of Frame 2</div>}
-          {activeFrame === 'frame3' && <div>Content of Frame 3</div>}          
+          {activeFrame === 'frame3' && <div>Content of Frame 3</div>}
         </>
       )}
     </div>

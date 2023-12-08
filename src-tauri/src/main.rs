@@ -29,7 +29,7 @@ async fn get_media(tool: State<'_, Mutex<app::App>>) -> Result<String, String> {
 #[tauri::command]
 async fn get_rank(tool: State<'_, Mutex<app::App>>) -> Result<String, String> {
     let app = tool.lock().map_err(|_| "Failed to acquire lock")?;
-    Ok("hello".into())
+    app.get_permission_level().map_or_else(|| Err("Could not find user".into()), |res| Ok(res.to_string()))
 }
 
 
@@ -39,7 +39,7 @@ fn main() {
 
     tauri::Builder::default()
         .manage(app)    
-        .invoke_handler(tauri::generate_handler![authenticate, get_media])
+        .invoke_handler(tauri::generate_handler![authenticate, get_rank, get_media])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
