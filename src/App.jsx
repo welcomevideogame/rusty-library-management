@@ -1,7 +1,7 @@
 import { useState } from "react";
 import "./App.css";
 import SignIn from "./SignIn";
-import Dashboard from "./dashboard/Dashboard"
+import Dashboard from "./dashboard/dashboard";
 
 function App() {
   const [isLoggedIn, handleLoginSuccess] = useState(false);

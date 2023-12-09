@@ -46,12 +46,14 @@ impl App {
     }
 
     pub fn authenticate_employee(&mut self, employee_id: u16, password: &str) -> bool {
-        if let Some(emp) = self.employees.get(&employee_id) {
-            utils::security::verify_password(emp.password(), password).unwrap_or_else(|_| false)
-        }
-        else {
-            false
-        }
+        self.employees.get(&employee_id)
+            .and_then(|emp| utils::security::verify_password(emp.password(), password).ok())
+            .map_or(false, |res| {
+                if res {
+                    self.user = employee_id;
+                }
+                res
+            })
     }
 
     pub fn get_permission_level(&self) -> Option<&PermissionLevel> {

@@ -9,6 +9,9 @@ import Navigator from './Navigator';
 import Content from './Content';
 import Header from './Header';
 
+import { invoke } from "@tauri-apps/api/tauri";
+import { useEffect } from 'react';
+
 function Copyright() {
   return (
     <Typography variant="body2" color="text.secondary" align="center">
@@ -169,10 +172,21 @@ const drawerWidth = 256;
 export default function Dashboard({onLogOut}) {
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const isSmUp = useMediaQuery(theme.breakpoints.up('sm'));
+  const [rank, setRank] = React.useState("");
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
+
+  useEffect(() => {
+    invoke('get_rank')
+      .then((data) => {
+        setRank(data)
+      })
+      .catch((error) => {
+        console.error('Error calling get_rank:', error);
+      });
+  }, []);
 
   return (
     <ThemeProvider theme={theme}>
@@ -184,20 +198,21 @@ export default function Dashboard({onLogOut}) {
         >
           {isSmUp ? null : (
             <Navigator
+              rank={rank}
               PaperProps={{ style: { width: drawerWidth } }}
               variant="temporary"
               open={mobileOpen}
               onClose={handleDrawerToggle}
             />
           )}
-
           <Navigator
+            rank={rank}
             PaperProps={{ style: { width: drawerWidth } }}
             sx={{ display: { sm: 'block', xs: 'none' } }}
           />
         </Box>
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-          <Header onDrawerToggle={handleDrawerToggle} onLogOut={onLogOut}/>
+          <Header onDrawerToggle={handleDrawerToggle} onLogOut={onLogOut} />
           <Box component="main" sx={{ flex: 1, py: 6, px: 4, bgcolor: '#eaeff1' }}>
             <Content />
           </Box>

@@ -21,32 +21,25 @@ const categories = [
   {
     id: 'System',
     children: [
-      {
-        id: 'Database',
-        icon: <DnsRoundedIcon />,
-        active: true,
-      },
-      { id: 'Storage', icon: <PermMediaOutlinedIcon /> },
-      { id: 'Hosting', icon: <PublicIcon /> },
-      { id: 'Functions', icon: <SettingsEthernetIcon /> },
-      {
-        id: 'Machine learning',
-        icon: <SettingsInputComponentIcon />,
-      },
+      { id: 'Database', icon: <DnsRoundedIcon />, permission: 'Manager' },
+      { id: 'Placeholder1', icon: <PermMediaOutlinedIcon />, permission: 'User' },
+      { id: 'Placeholder2', icon: <PublicIcon />, permission: 'User' },
+      { id: 'Placeholder3', icon: <SettingsEthernetIcon />, permission: 'Admin' },
+      { id: 'Placeholder4', icon: <SettingsInputComponentIcon />, permission: 'Admin' },
     ],
   },
   {
-    id: 'Configuration',
+    id: 'System',
     children: [
-      { id: 'Settings', icon: <SettingsIcon /> },
+      { id: 'Settings', icon: <SettingsIcon />, permission: 'User' },
     ],
   },
   {
     id: 'Developer Tools',
     children: [
-      { id: 'Analytics', icon: <SettingsIcon /> },
-      { id: 'Performance', icon: <TimerIcon /> },
-      { id: 'Test Lab', icon: <PhonelinkSetupIcon /> },
+      { id: 'Analytics', icon: <SettingsIcon />, permission: 'Manager' },
+      { id: 'Performance', icon: <TimerIcon />, permission: 'Dev'},
+      { id: 'Test Lab', icon: <PhonelinkSetupIcon />, permission: 'Dev'},
     ],
   },
 ];
@@ -67,32 +60,31 @@ const itemCategory = {
 };
 
 export default function Navigator(props) {
-  const { ...other } = props;
+  const { rank, ...other } = props;
+
+  // Check if the user has the required rank to view an item
+  const hasPermission = (requiredRank) => {
+    const rankHierarchy = ['None', 'Basic', 'User', 'Manager', 'Admin', 'Dev'];
+    return rankHierarchy.indexOf(rank) >= rankHierarchy.indexOf(requiredRank);
+  };
 
   return (
     <Drawer variant="permanent" {...other}>
       <List disablePadding>
-        <ListItem sx={{ ...item, ...itemCategory, fontSize: 22, color: '#fff' }}>
-          Manager
-        </ListItem>
-        <ListItem sx={{ ...item, ...itemCategory }}>
-          <ListItemIcon>
-            <HomeIcon />
-          </ListItemIcon>
-          <ListItemText>Overview</ListItemText>
-        </ListItem>
         {categories.map(({ id, children }) => (
           <Box key={id} sx={{ bgcolor: '#101F33' }}>
             <ListItem sx={{ py: 2, px: 3 }}>
               <ListItemText sx={{ color: '#fff' }}>{id}</ListItemText>
             </ListItem>
-            {children.map(({ id: childId, icon, active }) => (
-              <ListItem disablePadding key={childId}>
-                <ListItemButton selected={active} sx={item}>
-                  <ListItemIcon>{icon}</ListItemIcon>
-                  <ListItemText>{childId}</ListItemText>
-                </ListItemButton>
-              </ListItem>
+            {children
+              .filter(child => hasPermission(child.permission))
+              .map(({ id: childId, icon }) => (
+                <ListItem disablePadding key={childId}>
+                  <ListItemButton sx={item}>
+                    <ListItemIcon>{icon}</ListItemIcon>
+                    <ListItemText>{childId}</ListItemText>
+                  </ListItemButton>
+                </ListItem>
             ))}
             <Divider sx={{ mt: 2 }} />
           </Box>
