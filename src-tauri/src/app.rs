@@ -22,7 +22,7 @@ pub struct App {
 impl App {
     pub fn new() -> App {
         println!("Starting the library management system...");
-        let settings = utils::loading::load_db_settings();
+        let settings = utils::loading::load_db_settings().expect("Failed to load database settings");
         let rt = Runtime::new().unwrap();
         let db_manager = rt
             .block_on(DbTool::new(&settings))

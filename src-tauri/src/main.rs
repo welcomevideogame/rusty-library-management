@@ -1,12 +1,13 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-use serde::de::IntoDeserializer;
+
 use tauri::State;
 use std::sync::Mutex;
 
 mod app;
 mod types;
 mod utils;
+mod data_manager;
 
 #[tauri::command]
 async fn authenticate(

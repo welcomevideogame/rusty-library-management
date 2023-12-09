@@ -21,8 +21,8 @@ const categories = [
   {
     id: 'System',
     children: [
-      { id: 'Database', icon: <DnsRoundedIcon />, permission: 'Manager' },
-      { id: 'Placeholder1', icon: <PermMediaOutlinedIcon />, permission: 'User' },
+      { id: 'Items', icon: <DnsRoundedIcon />, permission: 'User' },
+      { id: 'Employees', icon: <PermMediaOutlinedIcon />, permission: 'Admin' },
       { id: 'Placeholder2', icon: <PublicIcon />, permission: 'User' },
       { id: 'Placeholder3', icon: <SettingsEthernetIcon />, permission: 'Admin' },
       { id: 'Placeholder4', icon: <SettingsInputComponentIcon />, permission: 'Admin' },

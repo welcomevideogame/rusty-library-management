@@ -204,7 +204,7 @@ mod tests {
 
     #[tokio::test]
     async fn add_employee() {
-        let settings = super::super::utils::loading::load_db_settings();
+        let settings = super::super::utils::loading::load_db_settings().unwrap();
         let tool = manager::DbTool::new(&settings).await.unwrap();
 
         let test_employee = create_test_employee();
@@ -216,7 +216,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_employee() {
-        let settings = super::super::utils::loading::load_db_settings();
+        let settings = super::super::utils::loading::load_db_settings().unwrap();
         let tool = manager::DbTool::new(&settings).await.unwrap();
         let mut test_employee = create_test_employee();
         test_employee.set_name("Jane Doe".to_owned());

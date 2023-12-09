@@ -40,7 +40,12 @@ export default function SignIn({ onLoginSuccess }) {
   const [loginError, setLoginError] = useState(false);
 
   const handleUsernameChange = (e) => {
-    setUsername(e.currentTarget.value);
+    const value = e.currentTarget.value;
+    if (/^[1-9]\d*$/.test(value)) {
+      setUsername(value);
+    } else if (value === '') {
+      setUsername('');
+    }
   };
 
   const handleSubmit = (e) => {
