@@ -1,21 +1,10 @@
 import { useState } from "react";
 import "./App.css";
 import SignIn from "./SignIn";
+import Dashboard from "./dashboard/Dashboard"
 
 function App() {
   const [isLoggedIn, handleLoginSuccess] = useState(false);
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  
-  const [activeFrame, setActiveFrame] = useState(null);
-  const [mediaData, setMediaData] = useState([]);
-  const [rank, setRank] = useState("");
-
-  const [buttonVisibility, setButtonVisibility] = useState({
-    mediaButton: false,
-    employeesButton: false,
-    settingsButton: false
-  });
 
   return (
     <div className="container">
@@ -25,7 +14,7 @@ function App() {
         </>
       ) : (
         <>
-          Dashboard goes here
+          <Dashboard onLogOut={handleLoginSuccess} />
         </>
       )}
     </div>
