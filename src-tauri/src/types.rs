@@ -287,7 +287,7 @@ pub mod structs {
         pub fn insert(&mut self, word: String) {
             let mut cur = &mut self.root;
             for c in word.chars() {
-                cur = cur.children.entry(c).or_insert(TreeNode::new());
+                cur = cur.children.entry(c).or_default();
             }
             cur.word = true;
         }

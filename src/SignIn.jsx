@@ -14,7 +14,7 @@ import Container from '@mui/material/Container';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 
 import { invoke } from "@tauri-apps/api/tauri";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 function Copyright(props) {
   return (
@@ -37,6 +37,7 @@ export default function SignIn({ onLoginSuccess }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [loginError, setLoginError] = useState(false);
 
   const handleUsernameChange = (e) => {
     const value = e.currentTarget.value;
@@ -52,15 +53,21 @@ export default function SignIn({ onLoginSuccess }) {
     logIn();
   };
 
-  async function logIn(){
-    await invoke('authenticate', {id: parseInt(username), password: password})
+  async function logIn() {
+    setLoginError(false); 
+    await invoke('authenticate', { id: parseInt(username), password: password })
       .then((res) => {
         setIsLoggedIn(res);
         if (res) {
           onLoginSuccess(true);
+        } else {
+          setLoginError(true);
         }
       })
-      .catch((e) => console.error(e))
+      .catch((e) => {
+        console.error(e);
+        setLoginError(true);
+      });
   }
 
   return (
@@ -68,14 +75,14 @@ export default function SignIn({ onLoginSuccess }) {
       <Container component="main" maxWidth="xs">
         <CssBaseline />
         <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          minHeight: '86vh',
-          marginTop: '0',
-          justifyContent: 'center'
-        }}
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            minHeight: '86vh',
+            marginTop: '0',
+            justifyContent: 'center'
+          }}
         >
           <Avatar sx={{ m: 1, bgcolor: 'secondary.main' }}>
             <LockOutlinedIcon />
@@ -84,6 +91,11 @@ export default function SignIn({ onLoginSuccess }) {
             Sign in
           </Typography>
           <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
+            {loginError && (
+              <Typography color="error" align="center">
+                Incorrect User ID or Password
+              </Typography>
+            )}
             <TextField
               margin="normal"
               required
