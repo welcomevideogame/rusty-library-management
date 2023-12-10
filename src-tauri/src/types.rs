@@ -350,7 +350,7 @@ pub mod enums {
     use std::cmp::Ordering;
     use std::fmt;
 
-    #[derive(serde::Deserialize, serde::Serialize, Debug, Default)]
+    #[derive(serde::Deserialize, serde::Serialize, Debug, Default, Clone)]
     pub enum PermissionLevel {
         Basic,
         User,

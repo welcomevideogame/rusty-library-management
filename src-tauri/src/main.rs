@@ -17,17 +17,19 @@ async fn authenticate(
     password: &str
 ) -> Result<bool, String> {
     let mut app = tool.lock().map_err(|_| "Failed to acquire lock")?;
-    if app.authenticate_employee(id, password) { Ok(true) } else { Err("Authentication failed".into()) }
+    app.authenticate_employee(id, password)
 }
 
 
 #[tauri::command]
 async fn get_media(tool: State<'_, Mutex<app::App>>) -> Result<String, String> {
     let app = tool.lock().map_err(|_| "Failed to acquire lock")?;
-    let new_media: Vec<types::structs::Media> = utils::loading::hashmap_to_vec(app.get_media());
+    let media_guard = app.get_media(); // This is a MutexGuard
+    let new_media: Vec<types::structs::Media> = utils::loading::hashmap_to_vec(&*media_guard);
 
     serde_json::to_string(&new_media).map_err(|_| "Failed to serialize media data".into())
 }
+
 
 #[tauri::command]
 async fn search_media(

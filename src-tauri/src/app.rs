@@ -5,6 +5,8 @@ use crate::types::structs::{DisplayInfo, Employee, Media, Trie};
 use serde_json::Value;
 use std::collections::HashMap;
 use tokio::runtime::Runtime;
+use std::sync::{Arc, Mutex};
+use std::mem;
 
 mod data_manager {
     include!("data_manager.rs");
@@ -12,9 +14,9 @@ mod data_manager {
 
 pub struct App {
     db_manager: DbTool,
-    employees: HashMap<u16, Employee>,
+    employees: Arc<Mutex<HashMap<u16, Employee>>>,
     user: u16,
-    media: HashMap<u16, Media>,
+    media: Arc<Mutex<HashMap<u16, Media>>>,
     trie: HashMap<&'static str, Trie>,
     rt: Runtime,
 }
@@ -28,8 +30,8 @@ impl App {
             .block_on(DbTool::new(&settings))
             .expect("Failed to connect to the database");
         println!("Connected to the database");
-        let employees: HashMap<u16, Employee> = HashMap::new();
-        let media: HashMap<u16, Media> = HashMap::new();
+        let employees = Arc::new(Mutex::new(HashMap::<u16, Employee>::new()));
+        let media = Arc::new(Mutex::new(HashMap::<u16, Media>::new()));
         let trie: HashMap<&'static str, Trie> = HashMap::new();
         App {
             db_manager,
@@ -42,22 +44,26 @@ impl App {
     }
 
     pub fn run(&mut self) {
-        self.update_data();
+        self.refresh_all_data();
     }
 
-    pub fn authenticate_employee(&mut self, employee_id: u16, password: &str) -> bool {
-        self.employees.get(&employee_id)
+    pub fn authenticate_employee(&mut self, employee_id: u16, password: &str) -> Result<bool, String> {
+        let employees = self.employees.lock().map_err(|_| "Failed to acquire lock".to_string())?;
+    
+        employees.get(&employee_id)
             .and_then(|emp| utils::security::verify_password(emp.password(), password).ok())
-            .map_or(false, |res| {
+            .map_or(Ok(false), |res| {
                 if res {
                     self.user = employee_id;
                 }
-                res
+                Ok(res)
             })
+            .or_else(|_: String| Err("Password verification failed".into()))
     }
 
-    pub fn get_permission_level(&self) -> Option<&PermissionLevel> {
-        self.employees.get(&self.user).map(|emp| emp.perm_level())
+    pub fn get_permission_level(&self) -> Option<PermissionLevel> {
+        let employees = self.employees.lock().ok()?;
+        employees.get(&self.user).map(|emp| emp.perm_level().to_owned())
     }
 
     pub fn search_items<'a, T: DisplayInfo + ToString>(
@@ -68,11 +74,23 @@ impl App {
         name_vec.starts_with(search.into())
     }
 
-    fn update_data(&mut self) {
-        self.employees = utils::loading::vec_to_hashmap(self.rt.block_on(self.db_manager.get_table()));
-        self.media = utils::loading::vec_to_hashmap(self.rt.block_on(self.db_manager.get_table()));
-        self.trie.insert(Employee::get_table_name(), utils::loading::hashmap_to_trie(&self.employees));
-        self.trie.insert(Media::get_table_name(), utils::loading::hashmap_to_trie(&self.media));
+    fn update_data<T: DisplayInfo>(&mut self, data: Vec<T>, storage: &Arc<Mutex<HashMap<u16, T>>>) {
+        let mut storage_guard = storage.lock().unwrap_or_else(|e| e.into_inner());
+        *storage_guard = utils::loading::vec_to_hashmap(data);
+        self.trie.insert(T::get_table_name(), utils::loading::hashmap_to_trie(&storage_guard));
+    }
+
+    pub fn refresh_all_data(&mut self) {
+        // TODO: Redesign this so there is no need to Temporarily take ownership of the Arc<Mutex<...>> fields
+        let temp_employees = mem::take(&mut self.employees);
+        let temp_media = mem::take(&mut self.media);
+        let emp_data = self.rt.block_on(self.db_manager.get_table::<Employee>());
+        let media_data = self.rt.block_on(self.db_manager.get_table::<Media>());
+    
+        self.update_data(emp_data, &temp_employees);
+        self.update_data(media_data, &temp_media);
+        self.employees = temp_employees;
+        self.media = temp_media;
     }
 
     fn create_obj<T: DisplayInfo + Default + serde::Serialize + serde::de::DeserializeOwned>(
@@ -156,8 +174,8 @@ impl App {
         Ok(())
     }
 
-    pub fn get_media(&self) -> &HashMap<u16, Media> {
-        &self.media
+    pub fn get_media(&self) -> std::sync::MutexGuard<HashMap<u16, Media>> {
+        self.media.lock().expect("Failed to lock media mutex")
     }
 
 }
