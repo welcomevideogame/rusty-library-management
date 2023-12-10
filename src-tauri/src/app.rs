@@ -60,6 +60,13 @@ impl App {
         self.employees.get(&self.user).map(|emp| emp.perm_level())
     }
 
+    pub fn search_items<'a, T: DisplayInfo + ToString>(
+        &self,
+        search: &str
+    ) -> Option<Vec<String>> {
+        let name_vec: &Trie = self.trie.get(T::get_table_name())?;
+        name_vec.starts_with(search.into())
+    }
 
     fn update_data(&mut self) {
         self.employees = utils::loading::vec_to_hashmap(self.rt.block_on(self.db_manager.get_table()));
@@ -113,22 +120,6 @@ impl App {
             Err(_) => return None,
         };
         items.get(&response)
-    }
-
-    fn search_items<'a, T: DisplayInfo + ToString>(
-        &self,
-        _items: &'a HashMap<u16, T>
-    ) -> Option<&'a T> {
-        println!("Enter the name of the item you want to search");
-        let name = utils::user::get_input();
-        let name_vec: &Trie = self.trie.get(T::get_table_name())?;
-
-        let names = name_vec.starts_with(name)?;
-        println!("found some");
-        for name in names{
-            println!("{}", name);
-        }
-        None
     }
 
     fn update_item<T: DisplayInfo>(&self, obj: &T) -> Result<(), &str> {

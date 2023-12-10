@@ -14,12 +14,25 @@ import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
 
+import { invoke } from "@tauri-apps/api/tauri";
+
 export default function Content() {
   const [tabValue, setTabValue] = React.useState(0);
+  const [search, setSearch] = React.useState("");
+  const [mediaData, setMediaData] = React.useState([]);
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
   };
+
+  async function searchMedia() {
+    await invoke('search_media', { search: search })
+    .then((json) => {
+      const data = JSON.parse(json);
+      setMediaData(data);
+    })
+    .catch((error) => console.error('Error fetching media data:', error));
+  }
 
   const renderTabContent = () => {
     switch (tabValue) {
@@ -40,16 +53,20 @@ export default function Content() {
                   <Grid item xs>
                     <TextField
                       fullWidth
-                      placeholder="Search by title, publisher, etc"
+                      placeholder="Search by title"
                       InputProps={{
                         disableUnderline: true,
                         sx: { fontSize: 'default' },
                       }}
                       variant="standard"
+                      onChange={(e) => setSearch(e.currentTarget.value)}
                     />
                   </Grid>
                   <Grid item>
-                    <Button variant="contained" sx={{ mr: 1 }}>
+                    <Button
+                      variant="contained"
+                      sx={{ mr: 1 }}
+                      onClick={searchMedia}>
                       Search
                     </Button>
                     <Tooltip title="Clear">
@@ -61,9 +78,19 @@ export default function Content() {
                 </Grid>
               </Toolbar>
             </AppBar>
-            <Typography sx={{ my: 5, mx: 2 }} color="text.secondary" align="center">
-              No users for this project yet
-            </Typography>
+            {mediaData.length === 0 ? (
+              <Typography sx={{ my: 5, mx: 2 }} color="text.secondary" align="center">
+                Nothing found
+              </Typography>
+            ) : (
+              <div>
+                {mediaData.map((mediaTitle, index) => (
+                  <Typography key={index} sx={{ my: 2, mx: 2 }} color="text.primary" align="center">
+                    {mediaTitle}
+                  </Typography>
+                ))}
+              </div>
+            )}
           </Paper>
         );
       case 1:
