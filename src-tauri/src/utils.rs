@@ -1,10 +1,10 @@
 pub mod loading {
+    use super::super::types::structs::Trie;
     use crate::types::structs::DisplayInfo;
     use std::collections::HashMap;
     use std::fs::File;
     use std::io::prelude::*;
     use std::io::BufReader;
-    use super::super::types::structs::Trie;
 
     pub fn load_db_settings() -> Result<Vec<String>, String> {
         let settings: [&str; 3] = ["endpoint", "api_key", "salt"];
@@ -23,10 +23,15 @@ pub mod loading {
         let contents = load_config_contents(); // Ensure this function returns a Result or handles errors internally
         let mut config = configparser::ini::Ini::new();
         config.read(contents).map_err(|e| e.to_string())?;
-    
-        settings.iter()
-            .map(|&setting| config.get("DBSettings", setting)
-            .ok_or_else(|| format!("Setting not found: {}", setting))).collect()
+
+        settings
+            .iter()
+            .map(|&setting| {
+                config
+                    .get("DBSettings", setting)
+                    .ok_or_else(|| format!("Setting not found: {}", setting))
+            })
+            .collect()
     }
 
     pub fn vec_to_hashmap<T: DisplayInfo>(obj_vec: Vec<T>) -> HashMap<u16, T> {

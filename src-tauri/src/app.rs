@@ -4,9 +4,9 @@ use crate::types::enums::PermissionLevel;
 use crate::types::structs::{DisplayInfo, Employee, Media, Trie};
 use serde_json::Value;
 use std::collections::HashMap;
-use tokio::runtime::Runtime;
-use std::sync::{Arc, Mutex};
 use std::mem;
+use std::sync::{Arc, Mutex};
+use tokio::runtime::Runtime;
 
 mod data_manager {
     include!("data_manager.rs");
@@ -24,7 +24,8 @@ pub struct App {
 impl App {
     pub fn new() -> App {
         println!("Starting the library management system...");
-        let settings = utils::loading::load_db_settings().expect("Failed to load database settings");
+        let settings =
+            utils::loading::load_db_settings().expect("Failed to load database settings");
         let rt = Runtime::new().unwrap();
         let db_manager = rt
             .block_on(DbTool::new(&settings))
@@ -47,10 +48,18 @@ impl App {
         self.refresh_all_data();
     }
 
-    pub fn authenticate_employee(&mut self, employee_id: u16, password: &str) -> Result<bool, String> {
-        let employees = self.employees.lock().map_err(|_| "Failed to acquire lock".to_string())?;
-    
-        employees.get(&employee_id)
+    pub fn authenticate_employee(
+        &mut self,
+        employee_id: u16,
+        password: &str,
+    ) -> Result<bool, String> {
+        let employees = self
+            .employees
+            .lock()
+            .map_err(|_| "Failed to acquire lock".to_string())?;
+
+        employees
+            .get(&employee_id)
             .and_then(|emp| utils::security::verify_password(emp.password(), password).ok())
             .map_or(Ok(false), |res| {
                 if res {
@@ -63,13 +72,12 @@ impl App {
 
     pub fn get_permission_level(&self) -> Option<PermissionLevel> {
         let employees = self.employees.lock().ok()?;
-        employees.get(&self.user).map(|emp| emp.perm_level().to_owned())
+        employees
+            .get(&self.user)
+            .map(|emp| emp.perm_level().to_owned())
     }
 
-    pub fn search_items<'a, T: DisplayInfo + ToString>(
-        &self,
-        search: &str
-    ) -> Option<Vec<String>> {
+    pub fn search_by_id<'a, T: DisplayInfo + ToString>(&self, search: &str) -> Option<Vec<String>> {
         let name_vec: &Trie = self.trie.get(T::get_table_name())?;
         name_vec.starts_with(search.into())
     }
@@ -77,16 +85,19 @@ impl App {
     fn update_data<T: DisplayInfo>(&mut self, data: Vec<T>, storage: &Arc<Mutex<HashMap<u16, T>>>) {
         let mut storage_guard = storage.lock().unwrap_or_else(|e| e.into_inner());
         *storage_guard = utils::loading::vec_to_hashmap(data);
-        self.trie.insert(T::get_table_name(), utils::loading::hashmap_to_trie(&storage_guard));
+        self.trie.insert(
+            T::get_table_name(),
+            utils::loading::hashmap_to_trie(&storage_guard),
+        );
     }
 
     pub fn refresh_all_data(&mut self) {
-        // TODO: Redesign this so there is no need to Temporarily take ownership of the Arc<Mutex<...>> fields
+        // TODO: Redesign this so there is no need to temporarily take ownership of the Arc<Mutex<...>> fields
         let temp_employees = mem::take(&mut self.employees);
         let temp_media = mem::take(&mut self.media);
         let emp_data = self.rt.block_on(self.db_manager.get_table::<Employee>());
         let media_data = self.rt.block_on(self.db_manager.get_table::<Media>());
-    
+
         self.update_data(emp_data, &temp_employees);
         self.update_data(media_data, &temp_media);
         self.employees = temp_employees;
@@ -177,5 +188,4 @@ impl App {
     pub fn get_media(&self) -> std::sync::MutexGuard<HashMap<u16, Media>> {
         self.media.lock().expect("Failed to lock media mutex")
     }
-
 }

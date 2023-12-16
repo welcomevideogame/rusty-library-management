@@ -13,13 +13,23 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
 
 import { invoke } from "@tauri-apps/api/tauri";
+import { useEffect } from 'react';
 
 export default function Content() {
   const [tabValue, setTabValue] = React.useState(0);
   const [search, setSearch] = React.useState("");
   const [mediaData, setMediaData] = React.useState([]);
+  const [allMediaData, setAllMediaData] = React.useState([]);
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
@@ -33,6 +43,41 @@ export default function Content() {
     })
     .catch((error) => console.error('Error fetching media data:', error));
   }
+
+  async function getAllMedia() {
+    await invoke('get_media')
+    .then((json) => {
+      const data = JSON.parse(json);
+      setAllMediaData(data);
+    })
+    .catch((error) => console.error('Error fetching media data:', error));
+  }
+  
+  useEffect(() => {
+    if (tabValue === 1) {
+      getAllMedia();
+    }
+  }, [tabValue]);
+
+  const renderMediaItem = (media) => {
+    return (
+      <Paper sx={{ my: 2, mx: 2, p: 2 }} key={media.id}>
+        <Typography variant="h6">{media.name}</Typography>
+        <Typography color="text.secondary">Type: {media.media_type}</Typography>
+        <Typography color="text.secondary">Vendor: {media.vendor}</Typography>
+        <Typography color="text.secondary">{media.borrowable ? 'Borrowable' : 'Not Borrowable'}</Typography>
+        <Typography color="text.secondary">Rented by: {media.renter}</Typography>
+      </Paper>
+    );
+  };
+
+  const renderBorrowableIcon = (borrowable) => {
+    return borrowable ? (
+      <CheckCircleIcon style={{ color: 'green' }} />
+    ) : (
+      <CancelIcon style={{ color: 'red' }} />
+    );
+  };
 
   const renderTabContent = () => {
     switch (tabValue) {
@@ -79,25 +124,46 @@ export default function Content() {
               </Toolbar>
             </AppBar>
             {mediaData.length === 0 ? (
-              <Typography sx={{ my: 5, mx: 2 }} color="text.secondary" align="center">
-                Nothing found
-              </Typography>
-            ) : (
-              <div>
-                {mediaData.map((mediaTitle, index) => (
-                  <Typography key={index} sx={{ my: 2, mx: 2 }} color="text.primary" align="center">
-                    {mediaTitle}
-                  </Typography>
-                ))}
+            <Typography sx={{ my: 5, mx: 2 }} color="text.secondary" align="center">
+              Nothing found
+            </Typography>
+              ) : (
+                <div>
+                {mediaData.map((media) => renderMediaItem(media))}
               </div>
             )}
           </Paper>
         );
       case 1:
         return (
-          <Typography sx={{ my: 5, mx: 2 }} color="text.secondary" align="center">
-            Content for Tab 2
-          </Typography>
+          <TableContainer component={Paper}>
+          <Table sx={{ minWidth: 650 }} aria-label="media table">
+            <TableHead>
+              <TableRow>
+                <TableCell>Name</TableCell>
+                <TableCell align="right">Type</TableCell>
+                <TableCell align="right">Vendor</TableCell>
+                <TableCell align="right">Borrowable</TableCell>
+                <TableCell align="right">Rented By</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {allMediaData.map((media) => (
+                <TableRow key={media.id}>
+                  <TableCell component="th" scope="row">
+                    {media.name}
+                  </TableCell>
+                  <TableCell align="right">{media.media_type}</TableCell>
+                  <TableCell align="right">{media.vendor}</TableCell>
+                  <TableCell align="right">
+                    {renderBorrowableIcon(media.borrowable)}
+                  </TableCell>
+                  <TableCell align="right">{media.renter}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
         );
       case 2:
         return (

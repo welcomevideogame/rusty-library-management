@@ -1,10 +1,11 @@
+/// This module contains the definition of various structs, traits, and implementations related to the library management system.
 pub mod structs {
 
     use super::super::utils;
     use crate::types::enums::{MediaType, PermissionLevel};
     use serde::{Deserialize, Serialize};
-    use std::fmt;
     use std::collections::HashMap;
+    use std::fmt;
 
     // Struct Definitions
     // ---------------------------------------------------------------
@@ -29,7 +30,7 @@ pub mod structs {
         name: String,
         borrowable: bool,
         vendor: String,
-        renter: String,
+        renter: Option<String>,
     }
 
     // Trait Implementation
@@ -98,7 +99,7 @@ pub mod structs {
             "Media"
         }
         fn additional_setup(&mut self) {
-            // TODO - Nothing yet
+            // TODO - Additional setup functionality
         }
     }
 
@@ -118,7 +119,10 @@ pub mod structs {
                 self.name,
                 if self.borrowable { "Yes" } else { "No" },
                 self.vendor,
-                self.renter
+                match &self.renter {
+                    Some(renter) => renter.as_str(),
+                    None => "None",
+                }
             )
         }
     }
@@ -224,7 +228,7 @@ pub mod structs {
                 name,
                 borrowable,
                 vendor,
-                renter,
+                renter: Some(renter),
             }
         }
         pub fn media_type(&self) -> &MediaType {
@@ -236,8 +240,8 @@ pub mod structs {
         pub fn vendor(&self) -> &str {
             &self.vendor
         }
-        pub fn renter(&self) -> &str {
-            &self.renter
+        pub fn renter(&self) -> Option<&str> {
+            self.renter.as_deref()
         }
         pub fn set_id(&mut self, id: u16) {
             self.id = id;
@@ -255,17 +259,16 @@ pub mod structs {
             self.vendor = vendor;
         }
         pub fn set_renter(&mut self, renter: String) {
-            self.renter = renter;
+            self.renter = Some(renter);
         }
     }
-
 
     #[derive(Default)]
     struct TreeNode {
         word: bool,
         children: HashMap<char, TreeNode>,
     }
-    
+
     impl TreeNode {
         pub fn new() -> Self {
             TreeNode {
@@ -274,16 +277,18 @@ pub mod structs {
             }
         }
     }
-    
+
     pub struct Trie {
         root: TreeNode,
     }
-    
+
     impl Trie {
         pub fn new() -> Self {
-            Trie { root: TreeNode::new() }
+            Trie {
+                root: TreeNode::new(),
+            }
         }
-    
+
         pub fn insert(&mut self, word: String) {
             let mut cur = &mut self.root;
             for c in word.chars() {
@@ -291,7 +296,7 @@ pub mod structs {
             }
             cur.word = true;
         }
-    
+
         pub fn search(&self, word: String) -> Option<Vec<String>> {
             let mut result = Vec::new();
             if let Some(node) = self.traverse(&word) {
@@ -305,7 +310,7 @@ pub mod structs {
                 None
             }
         }
-    
+
         pub fn starts_with(&self, prefix: String) -> Option<Vec<String>> {
             let mut result = Vec::new();
             if let Some(node) = self.traverse(&prefix) {
@@ -316,7 +321,7 @@ pub mod structs {
                 None
             }
         }
-    
+
         fn traverse(&self, prefix: &String) -> Option<&TreeNode> {
             let mut cur = &self.root;
             for c in prefix.chars() {
@@ -331,8 +336,13 @@ pub mod structs {
             }
             Some(cur)
         }
-    
-        fn collect_words(&self, node: &TreeNode, current_word: &mut String, result: &mut Vec<String>) {
+
+        fn collect_words(
+            &self,
+            node: &TreeNode,
+            current_word: &mut String,
+            result: &mut Vec<String>,
+        ) {
             if node.word {
                 result.push(current_word.clone());
             }
@@ -343,7 +353,6 @@ pub mod structs {
             }
         }
     }
-    
 }
 
 pub mod enums {
@@ -469,8 +478,14 @@ mod tests {
         trie.insert("hello".to_string());
         trie.insert("world".to_string());
 
-        assert_eq!(trie.starts_with("he".to_string()), Some(vec!["hello".to_string()]));
-        assert_eq!(trie.starts_with("wo".to_string()), Some(vec!["world".to_string()]));
+        assert_eq!(
+            trie.starts_with("he".to_string()),
+            Some(vec!["hello".to_string()])
+        );
+        assert_eq!(
+            trie.starts_with("wo".to_string()),
+            Some(vec!["world".to_string()])
+        );
         assert_eq!(trie.starts_with("foo".to_string()), None);
     }
 
