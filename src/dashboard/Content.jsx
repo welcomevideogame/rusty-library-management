@@ -21,15 +21,23 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 
 import { invoke } from "@tauri-apps/api/tauri";
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function Content() {
   const [tabValue, setTabValue] = React.useState(0);
   const [search, setSearch] = React.useState("");
   const [mediaData, setMediaData] = React.useState([]);
   const [allMediaData, setAllMediaData] = React.useState([]);
+  const [sortConfig, setSortConfig] = useState({ key: '', direction: 'ascending' });
+
+  const tableCellStyle = {
+    borderLeft: '1px solid rgba(224, 224, 224, 1)',
+    borderRight: '1px solid rgba(224, 224, 224, 1)'
+  };
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
@@ -77,6 +85,37 @@ export default function Content() {
     ) : (
       <CancelIcon style={{ color: 'red' }} />
     );
+  };
+
+  const requestSort = (key) => {
+    let direction = 'ascending';
+    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  }
+
+  const sortedMediaData = React.useMemo(() => {
+    let sortableItems = [...allMediaData];
+    if (sortConfig !== null) {
+      sortableItems.sort((a, b) => {
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+          return sortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+          return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [allMediaData, sortConfig]);
+
+  const getSortDirectionIcon = (columnName) => {
+    if (sortConfig.key === columnName) {
+      return sortConfig.direction === 'ascending' ? <ArrowUpwardIcon /> : <ArrowDownwardIcon />;
+    }
+    return null;
   };
 
   const renderTabContent = () => {
@@ -137,33 +176,39 @@ export default function Content() {
       case 1:
         return (
           <TableContainer component={Paper}>
-          <Table sx={{ minWidth: 650 }} aria-label="media table">
-            <TableHead>
-              <TableRow>
-                <TableCell>Name</TableCell>
-                <TableCell align="right">Type</TableCell>
-                <TableCell align="right">Vendor</TableCell>
-                <TableCell align="right">Borrowable</TableCell>
-                <TableCell align="right">Rented By</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {allMediaData.map((media) => (
-                <TableRow key={media.id}>
-                  <TableCell component="th" scope="row">
-                    {media.name}
+            <Table sx={{ minWidth: 650 }} aria-label="media table">
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={tableCellStyle} onClick={() => requestSort('name')}>
+                    Name {getSortDirectionIcon('name')}
                   </TableCell>
-                  <TableCell align="right">{media.media_type}</TableCell>
-                  <TableCell align="right">{media.vendor}</TableCell>
-                  <TableCell align="right">
-                    {renderBorrowableIcon(media.borrowable)}
+                  <TableCell sx={tableCellStyle} align="right" onClick={() => requestSort('media_type')}>
+                    Type {getSortDirectionIcon('media_type')}
                   </TableCell>
-                  <TableCell align="right">{media.renter}</TableCell>
+                  <TableCell sx={tableCellStyle} align="right" onClick={() => requestSort('vendor')}>
+                    Vendor {getSortDirectionIcon('vendor')}
+                  </TableCell>
+                  <TableCell sx={tableCellStyle} align="right" onClick={() => requestSort('borrowable')}>
+                    Borrowable {getSortDirectionIcon('borrowable')}
+                  </TableCell>
+                  <TableCell sx={tableCellStyle} align="right" onClick={() => requestSort('renter')}>
+                    Rented By {getSortDirectionIcon('renter')}
+                  </TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              </TableHead>
+              <TableBody>
+                {sortedMediaData.map((media) => (
+                  <TableRow key={media.id}>
+                    <TableCell sx={tableCellStyle} component="th" scope="row">{media.name}</TableCell>
+                    <TableCell sx={tableCellStyle} align="right">{media.media_type}</TableCell>
+                    <TableCell sx={tableCellStyle} align="right">{media.vendor}</TableCell>
+                    <TableCell sx={tableCellStyle} align="right">{renderBorrowableIcon(media.borrowable)}</TableCell>
+                    <TableCell sx={tableCellStyle} align="right">{media.renter}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
         );
       case 2:
         return (
