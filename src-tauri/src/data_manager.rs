@@ -29,6 +29,8 @@ pub mod manager {
         }
     }
 
+
+    #[derive(Clone)]
     pub struct DbTool {
         salt: String,
         client: Postgrest,

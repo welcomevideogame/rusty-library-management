@@ -12,6 +12,7 @@ mod data_manager {
     include!("data_manager.rs");
 }
 
+
 pub struct App {
     db_manager: DbTool,
     employees: Arc<Mutex<HashMap<u16, Employee>>>,
@@ -102,6 +103,28 @@ impl App {
         self.update_data(media_data, &temp_media);
         self.employees = temp_employees;
         self.media = temp_media;
+    }
+
+    pub async fn rent_media(&mut self, media_id: u16) -> Result<(), String> {
+        let current_user = self.get_current_user()?;
+        let media_guard = self.media.lock().map_err(|_| "Failed to acquire lock")?;
+        let media = media_guard
+            .get(&media_id)
+            .ok_or_else(|| "Media not found".to_string())?;
+        let mut media = media.clone();
+        media.set_renter(current_user.get_name().to_owned());
+        self.db_manager.database_update(&media).await
+            .map_err(|_| "Failed to update on database".to_string())?;
+        Ok(())
+    }
+
+    fn get_current_user(&self) -> Result<Employee, String> {
+        self.employees
+            .lock()
+            .map_err(|_| "Failed to acquire lock".to_string())?
+            .get(&self.user)
+            .cloned()
+            .ok_or_else(|| "User not found".to_string())
     }
 
     fn create_obj<T: DisplayInfo + Default + serde::Serialize + serde::de::DeserializeOwned>(

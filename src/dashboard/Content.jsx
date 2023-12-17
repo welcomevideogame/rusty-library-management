@@ -23,6 +23,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import Checkbox from '@mui/material/Checkbox';
 
 import { invoke } from "@tauri-apps/api/tauri";
 import { useEffect, useState } from 'react';
@@ -33,6 +34,8 @@ export default function Content() {
   const [mediaData, setMediaData] = React.useState([]);
   const [allMediaData, setAllMediaData] = React.useState([]);
   const [sortConfig, setSortConfig] = useState({ key: '', direction: 'ascending' });
+  const [checkedItems, setCheckedItems] = useState({});
+  const [checkoutData, setCheckoutData] = useState([]);
 
   const tableCellStyle = {
     borderLeft: '1px solid rgba(224, 224, 224, 1)',
@@ -41,6 +44,18 @@ export default function Content() {
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
+  };
+
+  useEffect(() => {
+    const selectedItems = allMediaData.filter(media => checkedItems[media.id]);
+    setCheckoutData(selectedItems);
+  }, [checkedItems, allMediaData]);
+
+  const handleCheckboxChange = (id) => {
+    setCheckedItems(prevState => ({
+      ...prevState,
+      [id]: !prevState[id]
+    }));
   };
 
   async function searchMedia() {
@@ -55,8 +70,13 @@ export default function Content() {
   async function getAllMedia() {
     await invoke('get_media')
     .then((json) => {
-      const data = JSON.parse(json);
-      setAllMediaData(data);
+        const data = JSON.parse(json);
+        setAllMediaData(data);
+        const newCheckedItems = {};
+        data.forEach(item => {
+          newCheckedItems[item.id] = false; // Initialize all as unchecked
+        });
+        setCheckedItems(newCheckedItems);
     })
     .catch((error) => console.error('Error fetching media data:', error));
   }
@@ -116,6 +136,35 @@ export default function Content() {
       return sortConfig.direction === 'ascending' ? <ArrowUpwardIcon /> : <ArrowDownwardIcon />;
     }
     return null;
+  };
+
+  async function handleCheckout() {
+    const jsonData = JSON.stringify(checkoutData);
+    await invoke('media_checkout', { cart: jsonData })
+    .then((json) => {
+      const data = JSON.parse(json);
+      setMediaData(data);
+    })
+    .catch((error) => console.error('Error fetching media data:', error));
+  }
+
+  const renderCheckoutContent = () => {
+    return (
+      <Paper sx={{ maxWidth: 1000, margin: 'auto', p: 2 }}>
+        <Typography variant="h6" sx={{ mb: 2 }}>Items</Typography>
+          {checkoutData.map(item => (
+            <Typography key={item.id}>
+              {item.name} - {item.media_type}
+            </Typography>
+          ))}
+          <Button
+            variant="contained"
+            sx={{ mr: 1 }}
+            onClick={handleCheckout}>
+            Search
+          </Button>
+      </Paper>
+    );
   };
 
   const renderTabContent = () => {
@@ -194,16 +243,24 @@ export default function Content() {
                   <TableCell sx={tableCellStyle} align="right" onClick={() => requestSort('renter')}>
                     Rented By {getSortDirectionIcon('renter')}
                   </TableCell>
+                  <TableCell sx={tableCellStyle}>Select</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {sortedMediaData.map((media) => (
-                  <TableRow key={media.id}>
+                    <TableRow key={media.id}>
                     <TableCell sx={tableCellStyle} component="th" scope="row">{media.name}</TableCell>
                     <TableCell sx={tableCellStyle} align="right">{media.media_type}</TableCell>
                     <TableCell sx={tableCellStyle} align="right">{media.vendor}</TableCell>
                     <TableCell sx={tableCellStyle} align="right">{renderBorrowableIcon(media.borrowable)}</TableCell>
                     <TableCell sx={tableCellStyle} align="right">{media.renter}</TableCell>
+                    <TableCell sx={tableCellStyle} align="right">
+                      <Checkbox
+                        disabled={!media.borrowable}
+                        checked={checkedItems[media.id] || false}
+                        onChange={() => handleCheckboxChange(media.id)}
+                      />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -211,11 +268,7 @@ export default function Content() {
           </TableContainer>
         );
       case 2:
-        return (
-          <Typography sx={{ my: 5, mx: 2 }} color="text.secondary" align="center">
-            Content for Tab 3
-          </Typography>
-        );
+        return renderCheckoutContent();
       default:
         return null;
     }
@@ -237,7 +290,7 @@ export default function Content() {
       >
         <Tab label="Search" style={{ accentColor: "black" }} /> 
         <Tab label="Full View" />
-        <Tab label="Placeholder" />
+        <Tab label="Reserve" />
       </Tabs>
       <br></br>
       {renderTabContent()}

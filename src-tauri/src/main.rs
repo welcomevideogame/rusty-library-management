@@ -105,6 +105,19 @@ async fn get_rank(tool: State<'_, Mutex<app::App>>) -> Result<String, String> {
 }
 
 
+#[tauri::command]
+async fn media_checkout(tool: State<'_, Mutex<app::App>>, cart: &str) -> Result<String, String> {
+    let cart_items: Vec<types::structs::Media> = serde_json::from_str(cart)
+        .map_err(|_| "Failed to parse cart data".to_string())?;
+    let media_ids: Vec<u16> = cart_items.into_iter().map(|item| item.get_id()).collect();
+    let mut app = tool.lock().map_err(|_| "Failed to acquire lock")?;
+    for media_id in media_ids {
+        _ = app.rent_media(media_id);
+    }
+    Ok("Checkout successful".to_string())
+}
+
+
 fn main() {
     let app = Mutex::new(app::App::new());
     app.lock().unwrap().run();
@@ -115,7 +128,8 @@ fn main() {
             authenticate,
             get_rank,
             get_media,
-            search_media
+            search_media,
+            media_checkout,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -10,7 +10,7 @@ pub mod structs {
     // Struct Definitions
     // ---------------------------------------------------------------
 
-    #[derive(serde::Deserialize, serde::Serialize, Debug, Default)]
+    #[derive(serde::Deserialize, serde::Serialize, Debug, Default, Clone)]
     pub struct Employee {
         id: u16,
         name: String,
@@ -263,7 +263,7 @@ pub mod structs {
         }
     }
 
-    #[derive(Default)]
+    #[derive(Clone, Default)]
     struct TreeNode {
         word: bool,
         children: HashMap<char, TreeNode>,
@@ -278,6 +278,8 @@ pub mod structs {
         }
     }
 
+
+    #[derive(Clone, Default)]
     pub struct Trie {
         root: TreeNode,
     }
