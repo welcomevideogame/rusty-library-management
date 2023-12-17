@@ -1,12 +1,12 @@
 pub mod loading {
+    use super::super::types::structs::Trie;
     use crate::types::structs::DisplayInfo;
     use std::collections::HashMap;
     use std::fs::File;
     use std::io::prelude::*;
     use std::io::BufReader;
-    use super::super::types::structs::Trie;
 
-    pub fn load_db_settings() -> Vec<String> {
+    pub fn load_db_settings() -> Result<Vec<String>, String> {
         let settings: [&str; 3] = ["endpoint", "api_key", "salt"];
         load_settings(&settings)
     }
@@ -19,27 +19,27 @@ pub mod loading {
         contents
     }
 
-    pub fn load_setting(section: &str, setting: &str) -> Option<String> {
-        let contents = load_config_contents();
+    fn load_settings(settings: &[&str]) -> Result<Vec<String>, String> {
+        let contents = load_config_contents(); // Ensure this function returns a Result or handles errors internally
         let mut config = configparser::ini::Ini::new();
-        config.read(contents).expect("Invalid config file!");
-        config.get(section, setting)
-    }
+        config.read(contents).map_err(|e| e.to_string())?;
 
-    fn load_settings(settings: &[&str]) -> Vec<String> {
-        let mut res_settings = Vec::new();
-        let contents = load_config_contents();
-        let mut config = configparser::ini::Ini::new();
-        config.read(contents).expect("Invalid config file!");
-
-        for setting in settings {
-            res_settings.push(config.get("DBSettings", setting).unwrap());
-        }
-        res_settings
+        settings
+            .iter()
+            .map(|&setting| {
+                config
+                    .get("DBSettings", setting)
+                    .ok_or_else(|| format!("Setting not found: {}", setting))
+            })
+            .collect()
     }
 
     pub fn vec_to_hashmap<T: DisplayInfo>(obj_vec: Vec<T>) -> HashMap<u16, T> {
         obj_vec.into_iter().map(|obj| (obj.get_id(), obj)).collect()
+    }
+
+    pub fn hashmap_to_vec<T: Clone>(map: &HashMap<u16, T>) -> Vec<T> {
+        map.values().cloned().collect()
     }
 
     pub fn hashmap_to_trie<T: DisplayInfo>(obj_map: &HashMap<u16, T>) -> Trie {

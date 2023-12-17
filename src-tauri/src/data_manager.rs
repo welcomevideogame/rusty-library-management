@@ -29,6 +29,8 @@ pub mod manager {
         }
     }
 
+
+    #[derive(Clone)]
     pub struct DbTool {
         salt: String,
         client: Postgrest,
@@ -62,7 +64,10 @@ pub mod manager {
             match resp.text().await {
                 Ok(s) => match serde_json::from_str(&s) {
                     Ok(vec_t) => vec_t,
-                    Err(err) => panic!("Error parsing data -> {}", err),
+                    Err(err) => panic!(
+                        "Error parsing data -> {}, most likely an invalid API url",
+                        err
+                    ),
                 },
                 Err(_) => panic!("Invalid table settings. Unable to get data."),
             }
@@ -161,7 +166,7 @@ pub mod manager {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::enums::{PermissionLevel, MediaType};
+    use crate::types::enums::{MediaType, PermissionLevel};
     use crate::types::structs::{Employee, Media};
 
     fn create_test_employee() -> Employee {
@@ -204,7 +209,7 @@ mod tests {
 
     #[tokio::test]
     async fn add_employee() {
-        let settings = super::super::utils::loading::load_db_settings();
+        let settings = super::super::utils::loading::load_db_settings().unwrap();
         let tool = manager::DbTool::new(&settings).await.unwrap();
 
         let test_employee = create_test_employee();
@@ -216,7 +221,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_employee() {
-        let settings = super::super::utils::loading::load_db_settings();
+        let settings = super::super::utils::loading::load_db_settings().unwrap();
         let tool = manager::DbTool::new(&settings).await.unwrap();
         let mut test_employee = create_test_employee();
         test_employee.set_name("Jane Doe".to_owned());

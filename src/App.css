@@ -1,0 +1,36 @@
+.logo.vite:hover {
+  filter: drop-shadow(0 0 2em #747bff);
+}
+
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafb);
+}
+
+.toolbar-button {
+  margin: 0 10px;
+  color: gray;
+}
+
+.toolbar-button.selected {
+  color: green;
+  font-style: italic;
+  font-weight: bold;
+}
+
+.toolbar-button.permission {
+  color:#61dafb
+}
+
+.p-datatable .p-datatable-thead > tr > th {
+  border: 1px solid #dee2e6;
+  border-color: cornsilk;
+}
+
+.p-datatable .p-datatable-tbody > tr > td {
+  border: 1px solid #dee2e6;
+  border-color: cornsilk;
+}
+
+.p-datatable {
+  border-collapse: collapse;
+}
